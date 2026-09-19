@@ -28,25 +28,34 @@ export default function LoginModal() {
     setIsPendingAlert(false);
   }, [authModal]);
 
+  const [loading, setLoading] = useState(false);
+
   if (authModal !== 'login' && authModal !== 'adminLogin' && authModal !== 'teacherLogin') return null;
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg(null);
     setIsPendingAlert(false);
+    setLoading(true);
 
-    if (tab === 'admin') {
-      const res = loginAdmin(username, password);
-      if (!res.success) setErrorMsg(res.message);
-    } else if (tab === 'teacher') {
-      const res = loginTeacher(username, password);
-      if (!res.success) setErrorMsg(res.message);
-    } else {
-      const res = loginStudent(username, password);
-      if (!res.success) {
-        setErrorMsg(res.message);
+    try {
+      let res;
+      if (tab === 'admin') {
+        res = await loginAdmin(username, password);
+      } else if (tab === 'teacher') {
+        res = await loginTeacher(username, password);
+      } else {
+        res = await loginStudent(username, password);
+      }
+
+      if (res && !res.success) {
+        setErrorMsg(res.message || 'Invalid credentials.');
         if (res.isPending) setIsPendingAlert(true);
       }
+    } catch (err) {
+      setErrorMsg(err.message || 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -177,12 +186,19 @@ export default function LoginModal() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  disabled={loading}
+                  className={`w-full py-3.5 rounded-xl text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 ${
                     tab === 'admin' ? 'bg-[#FA9C16] hover:bg-[#e0890f]' : 'bg-[#0A317B] hover:bg-[#061e4f]'
                   }`}
                 >
-                  <span>{tab === 'admin' ? 'Access Admin Console' : 'Sign In To Student Portal'}</span>
-                  <ArrowRight className="w-4 h-4" />
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                  ) : (
+                    <>
+                      <span>{tab === 'admin' ? 'Access Admin Console' : tab === 'teacher' ? 'Sign In To Studio' : 'Sign In To Student Portal'}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
 

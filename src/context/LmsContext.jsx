@@ -573,11 +573,47 @@ export function LmsProvider({ children }) {
       return loginTeacher('teacher', 'teacher123');
     }
 
-    // Try Supabase Auth if user provided an email
-    if (cleanUser.includes('@')) {
+    // 1. Check registered users
+    const found = users.find(
+      u => (u.username?.trim().toLowerCase() === cleanUser || 
+            u.email?.trim().toLowerCase() === cleanUser)
+    );
+
+    if (found) {
+      if (found.password && found.password.trim() !== cleanPass) {
+        return { 
+          success: false, 
+          message: 'Incorrect password. Please verify your credentials and try again.' 
+        };
+      }
+
+      if (found.status === 'PENDING') {
+        return { 
+          success: false, 
+          isPending: true,
+          message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL. Log into the Admin Panel (admin / admin123) to approve your application!` 
+        };
+      }
+
+      if (found.status === 'REJECTED') {
+        return { 
+          success: false, 
+          message: 'Your account registration was not approved by the administrator.' 
+        };
+      }
+
+      setCurrentUser({ ...found, role: 'STUDENT' });
+      setActiveView('portal');
+      setAuthModal(null);
+      return { success: true };
+    }
+
+    // 2. Try Supabase Auth
+    const emailToTry = cleanUser.includes('@') ? cleanUser : null;
+    if (emailToTry) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanUser,
+          email: emailToTry,
           password: cleanPass
         });
         if (!error && data?.user) {
@@ -593,44 +629,18 @@ export function LmsProvider({ children }) {
           setActiveView(profile.role === 'ADMIN' ? 'admin' : profile.role === 'TEACHER' ? 'teacher' : 'portal');
           setAuthModal(null);
           return { success: true };
+        } else if (error) {
+          return { success: false, message: error.message };
         }
       } catch (e) {
         console.warn('Supabase auth notice:', e);
       }
     }
 
-    const found = users.find(
-      u => (u.username.trim().toLowerCase() === cleanUser || 
-            u.email.trim().toLowerCase() === cleanUser) && 
-            u.password.trim() === cleanPass
-    );
-
-    if (!found) {
-      return { 
-        success: false, 
-        message: 'Invalid username/email or password.' 
-      };
-    }
-
-    if (found.status === 'PENDING') {
-      return { 
-        success: false, 
-        isPending: true,
-        message: `Your account (${found.username}) is PENDING ADMIN APPROVAL. Log into the ADMIN PANEL (admin / admin123) to click "Approve" first!` 
-      };
-    }
-
-    if (found.status === 'REJECTED') {
-      return { 
-        success: false, 
-        message: 'Your account request was not approved by the administrator.' 
-      };
-    }
-
-    setCurrentUser({ ...found, role: 'STUDENT' });
-    setActiveView('portal');
-    setAuthModal(null);
-    return { success: true };
+    return { 
+      success: false, 
+      message: 'Account not found. If you registered recently, please submit an enrollment application or check your credentials.' 
+    };
   };
 
   const loginAdmin = (username, password) => {

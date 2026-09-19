@@ -22,20 +22,31 @@ export default function EnrollmentModal() {
 
   const [statusMessage, setStatusMessage] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   if (authModal !== 'enroll') return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.username || !formData.email || !formData.password) {
       setErrorMsg('Please fill in all required fields.');
       return;
     }
 
-    const res = registerStudent(formData);
-    if (res.success) {
-      setStatusMessage(res.message);
-      setErrorMsg(null);
+    setSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await registerStudent(formData);
+      if (res && res.success) {
+        setStatusMessage(res.message);
+      } else {
+        setErrorMsg(res?.message || 'Could not complete registration. Please try again.');
+      }
+    } catch (err) {
+      setErrorMsg(err.message || 'An unexpected error occurred.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -192,10 +203,20 @@ export default function EnrollmentModal() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-xl bg-[#FA9C16] hover:bg-[#e0890f] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                    disabled={submitting}
+                    className="w-full py-3.5 rounded-xl bg-[#FA9C16] hover:bg-[#e0890f] disabled:opacity-60 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <span>Submit Account Application</span>
-                    <ArrowRight className="w-4 h-4" />
+                    {submitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Submitting Application...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Submit Account Application</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
                   </button>
                 </div>
 
