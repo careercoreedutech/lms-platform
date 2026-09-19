@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Analyst Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Fira+Sans:wght@400&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #1e1e1e;
+  }
+
+  /* ---------- CARD ---------- */
+  .card {
+    --pad: 38px;                 /* inner padding of the card */
+    --speed: 0.6s;
+    --ease: cubic-bezier(.65, .05, .25, 1);
+
+    position: relative;
+    width: 440px;
+    max-width: 90vw;
+    height: 640px;
+    border-radius: 26px;
+    overflow: hidden;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .35);
+  }
+
+  /* Image: starts full-size, shrinks into a thumbnail on hover */
+  .card__image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    overflow: hidden;
+    transition:
+      top var(--speed) var(--ease),
+      left var(--speed) var(--ease),
+      width var(--speed) var(--ease),
+      height var(--speed) var(--ease),
+      border-radius var(--speed) var(--ease);
+  }
+  .card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* dark tint so the title stays readable over the photo */
+  .card__image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(40, 40, 40, .45);
+    transition: opacity var(--speed) var(--ease);
+  }
+
+  /* Title */
+  .card__title {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+    padding: 30px var(--pad) 0;
+    font-family: "Archivo Black", "Arial Black", sans-serif;
+    font-size: 54px;
+    line-height: 1.12;
+  }
+  .card__title span { display: block; }
+  .card__title .t1 { color: #22d3dd; }
+  .card__title .t2 { color: #f18f01; }
+
+  /* Description: hidden until hover */
+  .card__text {
+    position: absolute;
+    z-index: 2;
+    left: var(--pad);
+    right: var(--pad);
+    top: 380px;
+    margin: 0;
+    font-family: "Fira Sans", system-ui, sans-serif;
+    font-size: 18px;
+    line-height: 1.5;
+    color: #1a1a1a;
+    opacity: 0;
+    transform: translateY(30px);
+    transition:
+      opacity .4s ease,
+      transform .4s ease;
+  }
+
+  /* ---------- HOVER / FOCUS STATE ---------- */
+  .card:hover .card__image,
+  .card:focus-within .card__image,
+  .card.is-open .card__image {
+    top: 190px;
+    left: var(--pad);
+    width: calc(100% - var(--pad) * 2);
+    height: 160px;
+    border-radius: 14px;
+  }
+  .card:hover .card__image::after,
+  .card:focus-within .card__image::after,
+  .card.is-open .card__image::after {
+    opacity: 0;
+  }
+  .card:hover .card__text,
+  .card:focus-within .card__text,
+  .card.is-open .card__text {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: .3s;       /* text appears after the image has shrunk */
+  }
+
+  .card:focus-visible { box-shadow: 0 0 0 4px #22d3dd; }
+
+  /* Small screens */
+  @media (max-width: 480px) {
+    .card { --pad: 26px; height: 600px; }
+    .card__title { font-size: 42px; }
+    .card:hover .card__image,
+    .card:focus-within .card__image,
+    .card.is-open .card__image { top: 150px; height: 140px; }
+    .card__text { top: 315px; font-size: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card * { transition-duration: .01s !important; transition-delay: 0s !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="card" tabindex="0">
+    <div class="card__image">
+      <!-- Replace with your own image -->
+      <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&q=80"
+           alt="Desk with a calculator, notebook and printed charts">
+    </div>
+
+    <h2 class="card__title">
+      <span class="t1">Business</span>
+      <span class="t2">Analyst</span>
+    </h2>
+
+    <p class="card__text">
+      A business analyst helps organizations improve processes, products, and
+      services by analyzing data and stakeholder needs. They bridge the gap
+      between business goals and technology solutions, ensuring projects
+      deliver value and meet requirements.
+    </p>
+  </div>
+
+<script>
+  // Touch devices have no hover, so a tap toggles the card open/closed
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('touchstart', () => card.classList.toggle('is-open'), { passive: true });
+  });
+</script>
+</body>
+</html>
