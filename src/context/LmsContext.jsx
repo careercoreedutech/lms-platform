@@ -565,8 +565,8 @@ export function LmsProvider({ children }) {
     const cleanUser = usernameOrEmail.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    if (cleanUser === 'admin' && cleanPass === 'admin123') {
-      return loginAdmin('admin', 'admin123');
+    if ((cleanUser === 'megaviz' || cleanUser === 'admin') && (cleanPass === 'megaviz@1234' || cleanPass === 'admin123')) {
+      return loginAdmin(cleanUser, cleanPass);
     }
 
     if ((cleanUser === 'teacher' || cleanUser === 'instructor') && (cleanPass === 'teacher123' || cleanPass === 'password123')) {
@@ -591,7 +591,7 @@ export function LmsProvider({ children }) {
         return { 
           success: false, 
           isPending: true,
-          message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL. Log into the Admin Panel (admin / admin123) to approve your application!` 
+          message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL. Log into the Admin Panel (megaviz / megaviz@1234) to approve your application!` 
         };
       }
 
@@ -647,13 +647,13 @@ export function LmsProvider({ children }) {
     const cleanUser = username.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    if (cleanUser === 'admin' && cleanPass === 'admin123') {
-      setCurrentUser({ name: 'System Admin', username: 'admin', role: 'ADMIN' });
+    if ((cleanUser === 'megaviz' || cleanUser === 'admin') && (cleanPass === 'megaviz@1234' || cleanPass === 'admin123')) {
+      setCurrentUser({ name: 'megaviz', username: 'megaviz', role: 'ADMIN', email: 'admin@careercore.com' });
       setActiveView('admin');
       setAuthModal(null);
       return { success: true };
     }
-    return { success: false, message: 'Invalid admin credentials. Use admin / admin123' };
+    return { success: false, message: 'Invalid admin credentials. Use megaviz / megaviz@1234' };
   };
 
   const loginTeacher = (username, password) => {

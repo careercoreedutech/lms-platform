@@ -160,7 +160,7 @@ export default function LoginModal() {
                     type="text"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    placeholder={tab === 'admin' ? 'Enter admin username' : 'Enter username or email address'}
+                    placeholder={tab === 'admin' ? 'megaviz' : 'Enter username or email address'}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                     required
                   />
@@ -176,7 +176,7 @@ export default function LoginModal() {
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder={tab === 'admin' ? 'megaviz@1234' : '••••••••'}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                     required
                   />
