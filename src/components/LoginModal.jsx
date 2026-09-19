@@ -50,30 +50,6 @@ export default function LoginModal() {
     }
   };
 
-  const fillDemoStudent = () => {
-    setTab('student');
-    setUsername('johndoe');
-    setPassword('password123');
-    setErrorMsg(null);
-    setIsPendingAlert(false);
-  };
-
-  const fillDemoTeacher = () => {
-    setTab('teacher');
-    setUsername('teacher');
-    setPassword('teacher123');
-    setErrorMsg(null);
-    setIsPendingAlert(false);
-  };
-
-  const fillDemoAdmin = () => {
-    setTab('admin');
-    setUsername('admin');
-    setPassword('admin123');
-    setErrorMsg(null);
-    setIsPendingAlert(false);
-  };
-
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -138,33 +114,6 @@ export default function LoginModal() {
               </button>
             </div>
 
-            {/* Quick Fill Credentials Bar */}
-            <div className="grid grid-cols-3 gap-1.5 mt-4 pt-1">
-              <button
-                type="button"
-                onClick={fillDemoStudent}
-                className="py-1.5 px-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0A317B] font-bold text-[10px] transition-all border border-blue-200 cursor-pointer text-center"
-              >
-                Student: johndoe
-              </button>
-
-              <button
-                type="button"
-                onClick={fillDemoTeacher}
-                className="py-1.5 px-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#1A9C9B] font-bold text-[10px] transition-all border border-teal-200 cursor-pointer text-center"
-              >
-                Teacher: teacher
-              </button>
-
-              <button
-                type="button"
-                onClick={fillDemoAdmin}
-                className="py-1.5 px-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#FA9C16] font-bold text-[10px] transition-all border border-amber-200 cursor-pointer text-center"
-              >
-                Admin: admin
-              </button>
-            </div>
-
             <form onSubmit={handleLogin} className="mt-4 space-y-4">
 
               {errorMsg && (
@@ -202,7 +151,7 @@ export default function LoginModal() {
                     type="text"
                     value={username}
                     onChange={e => setUsername(e.target.value)}
-                    placeholder={tab === 'admin' ? 'admin' : 'johndoe or john@example.com'}
+                    placeholder={tab === 'admin' ? 'Enter admin username' : 'Enter username or email address'}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                     required
                   />

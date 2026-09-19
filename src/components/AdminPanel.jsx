@@ -2237,7 +2237,7 @@ export default function AdminPanel() {
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-2xl font-extrabold text-[#0F172A]">{courses.length}</span>
                     <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-0.5">
-                      <span>↑</span> 2 new
+                      <span>Published</span>
                     </span>
                   </div>
                 </div>
@@ -2256,7 +2256,7 @@ export default function AdminPanel() {
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-2xl font-extrabold text-[#0F172A]">{mentors.length}</span>
                     <span className="text-[11px] font-semibold text-amber-600 flex items-center gap-0.5">
-                      <span>★</span> 4.9 avg
+                      <span>Faculty</span>
                     </span>
                   </div>
                 </div>
@@ -2273,7 +2273,7 @@ export default function AdminPanel() {
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] font-medium text-slate-400">Total Programs</p>
                   <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-2xl font-extrabold text-[#0F172A]">{courses.length > 6 ? courses.length : 6} Tracks</span>
+                    <span className="text-2xl font-extrabold text-[#0F172A]">{courses.length} Tracks</span>
                     <span className="text-[11px] font-semibold text-teal-600 flex items-center gap-0.5">
                       <span>Active</span>
                     </span>
@@ -3014,24 +3014,24 @@ export default function AdminPanel() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                   <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
-                    <p className="text-xs font-semibold text-slate-500">Course Completion Rate</p>
-                    <p className="text-2xl font-black text-[#2563EB] mt-1">87.4%</p>
-                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">↑ 4.2% from last month</p>
-                  </div>
-                  <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-100">
-                    <p className="text-xs font-semibold text-slate-500">Active Daily Learners</p>
-                    <p className="text-2xl font-black text-[#0D9488] mt-1">1,248</p>
-                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">↑ 12% monthly growth</p>
+                    <p className="text-xs font-semibold text-slate-500">Total Enrolled Learners</p>
+                    <p className="text-2xl font-black text-[#2563EB] mt-1">{users.filter(u => u.status === 'APPROVED').length}</p>
+                    <p className="text-[10px] text-slate-500 font-semibold mt-1">Verified active students</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100">
-                    <p className="text-xs font-semibold text-slate-500">Mentor Satisfaction</p>
-                    <p className="text-2xl font-black text-amber-600 mt-1">4.9 / 5.0</p>
-                    <p className="text-[10px] text-amber-600 font-semibold mt-1">Based on 640+ ratings</p>
+                    <p className="text-xs font-semibold text-slate-500">Pending Applications</p>
+                    <p className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</p>
+                    <p className="text-[10px] text-amber-600 font-semibold mt-1">Awaiting admin review</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-100">
+                    <p className="text-xs font-semibold text-slate-500">Published Courses</p>
+                    <p className="text-2xl font-black text-[#0D9488] mt-1">{courses.length}</p>
+                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Active curriculum tracks</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
-                    <p className="text-xs font-semibold text-slate-500">Placement Rate</p>
-                    <p className="text-2xl font-black text-purple-600 mt-1">94.2%</p>
-                    <p className="text-[10px] text-purple-600 font-semibold mt-1">High recruiter hire rate</p>
+                    <p className="text-xs font-semibold text-slate-500">Industry Mentors</p>
+                    <p className="text-2xl font-black text-purple-600 mt-1">{mentors.length}</p>
+                    <p className="text-[10px] text-purple-600 font-semibold mt-1">Active mentor faculty</p>
                   </div>
                 </div>
 
@@ -3040,24 +3040,32 @@ export default function AdminPanel() {
                   <h5 className="text-xs font-extrabold text-[#0F172A] uppercase tracking-wider">
                     Program Enrollment Distribution
                   </h5>
-                  <div className="space-y-2.5">
-                    {[
-                      { name: 'Full Stack Web Development', pct: 44, students: 190, color: 'bg-blue-600' },
-                      { name: 'Artificial Intelligence & Machine Learning', pct: 28, students: 121, color: 'bg-teal-500' },
-                      { name: 'Cloud Computing & DevOps', pct: 15, students: 65, color: 'bg-purple-600' },
-                      { name: 'Product Management & Business Analysis', pct: 13, students: 56, color: 'bg-amber-500' },
-                    ].map((track, i) => (
-                      <div key={i} className="space-y-1">
-                        <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-700">{track.name}</span>
-                          <span className="text-slate-500">{track.students} students ({track.pct}%)</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
-                          <div className={`h-full ${track.color} rounded-full transition-all duration-1000`} style={{ width: `${track.pct}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  {users.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 font-mono text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                      No student enrollments yet. New registrations will automatically reflect here in real-time.
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {courses.map((course, i) => {
+                        const count = users.filter(u => u.course && (u.course.toLowerCase().includes(course.title.toLowerCase()) || course.title.toLowerCase().includes(u.course.toLowerCase()))).length;
+                        const pct = users.length > 0 ? Math.round((count / users.length) * 100) : 0;
+                        const colors = ['bg-blue-600', 'bg-teal-500', 'bg-purple-600', 'bg-amber-500', 'bg-rose-500', 'bg-emerald-600'];
+                        const color = colors[i % colors.length];
+
+                        return (
+                          <div key={course.id || i} className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-slate-700">{course.title}</span>
+                              <span className="text-slate-500">{count} students ({pct}%)</span>
+                            </div>
+                            <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                              <div className={`h-full ${color} rounded-full transition-all duration-1000`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

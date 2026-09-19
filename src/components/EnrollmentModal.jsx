@@ -117,7 +117,7 @@ export default function EnrollmentModal() {
                       type="text"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="e.g. John Doe"
+                      placeholder="Enter your full name"
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                       required
                     />
@@ -133,7 +133,7 @@ export default function EnrollmentModal() {
                       type="text"
                       value={formData.username}
                       onChange={e => setFormData({ ...formData, username: e.target.value })}
-                      placeholder="e.g. johndoe"
+                      placeholder="Choose a username"
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                       required
                     />
@@ -149,7 +149,7 @@ export default function EnrollmentModal() {
                       type="email"
                       value={formData.email}
                       onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="john@example.com"
+                      placeholder="Enter your email address"
                       className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
                       required
                     />

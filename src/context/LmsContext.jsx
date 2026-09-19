@@ -318,18 +318,7 @@ Welcome to the foundational guide on modern **Product Management**.
   }
 ];
 
-const INITIAL_USERS = [
-  {
-    id: '1',
-    name: 'John Doe',
-    username: 'johndoe',
-    email: 'john@example.com',
-    password: 'password123',
-    course: 'Product Management - Skill Up',
-    status: 'APPROVED',
-    registeredAt: '2026-09-15 10:30 AM'
-  }
-];
+const INITIAL_USERS = [];
 
 export function LmsProvider({ children }) {
   const [courses, setCourses] = useState(() => {
@@ -356,7 +345,17 @@ export function LmsProvider({ children }) {
 
   const [users, setUsers] = useState(() => {
     const saved = localStorage.getItem('careercore_lms_users');
-    return saved ? JSON.parse(saved) : INITIAL_USERS;
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(u => u.email !== 'john@example.com' && u.username !== 'johndoe');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
   });
 
   const [currentUser, setCurrentUser] = useState(() => {

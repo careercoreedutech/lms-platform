@@ -51,8 +51,8 @@ export default function TeacherPanel() {
     });
   };
 
-  const totalEnrolledStudents = users ? users.filter(u => u.status === 'APPROVED' || !u.status).length : 3;
-  const totalTopicPages = courses.reduce((acc, c) => acc + (c.sections ? c.sections.reduce((sAcc, s) => sAcc + (s.items?.length || 0), 0) : 0), 0) || 9;
+  const totalEnrolledStudents = users ? users.filter(u => u.status === 'APPROVED').length : 0;
+  const totalTopicPages = courses.reduce((acc, c) => acc + (c.sections ? c.sections.reduce((sAcc, s) => sAcc + (s.items?.length || 0), 0) : 0), 0);
 
   const getCourseMeta = (course) => {
     const cat = (course.category || '').toLowerCase();
