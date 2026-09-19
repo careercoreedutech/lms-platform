@@ -52,6 +52,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import { supabase } from '../lib/supabase';
 
 const PRESET_IMAGES = [
   { label: 'Full Stack', url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=900&q=80' },
@@ -62,93 +63,6 @@ const PRESET_IMAGES = [
   { label: 'UI/UX Design', url: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=900&q=80' },
   { label: 'Cybersecurity', url: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&q=80' },
   { label: 'Mobile App', url: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=900&q=80' }
-];
-
-const INITIAL_MENTORS = [
-  {
-    id: 'm1',
-    name: 'Dr. Arjun Mehta',
-    role: 'Staff AI Research Engineer',
-    company: 'Google DeepMind',
-    course: 'Artificial Intelligence & Machine Learning',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80',
-    rating: 4.9,
-    reviewsCount: 142,
-    mentees: 210,
-    status: 'Active',
-    experience: '12+ Years',
-    bio: 'Former IIT researcher & AI Lead at DeepMind. Specializes in LLMs, Transformer architectures, and neural networks.'
-  },
-  {
-    id: 'm2',
-    name: 'Priya Sharma',
-    role: 'Principal Full Stack Architect',
-    company: 'Microsoft Azure',
-    course: 'Full Stack Web Development',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80',
-    rating: 4.9,
-    reviewsCount: 198,
-    mentees: 340,
-    status: 'Active',
-    experience: '10+ Years',
-    bio: 'Architected high-scale distributed microservices and modern React applications serving 50M+ daily requests.'
-  },
-  {
-    id: 'm3',
-    name: 'Vikramaditya Roy',
-    role: 'Head of Cloud & DevOps',
-    company: 'Amazon AWS',
-    course: 'Cloud Computing & DevOps',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80',
-    rating: 4.8,
-    reviewsCount: 88,
-    mentees: 165,
-    status: 'Active',
-    experience: '9+ Years',
-    bio: 'Kubernetes certified instructor, Terraform enthusiast, and AWS community hero guiding hands-on CI/CD pipelines.'
-  },
-  {
-    id: 'm4',
-    name: 'Ananya Deshmukh',
-    role: 'Group Product Manager',
-    company: 'Uber Technologies',
-    course: 'Product Management Masterclass',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80',
-    rating: 5.0,
-    reviewsCount: 112,
-    mentees: 195,
-    status: 'Active',
-    experience: '8+ Years',
-    bio: 'Product leader driving growth & monetisation loops. Guides students in product teardowns, metrics & PRDs.'
-  },
-  {
-    id: 'm5',
-    name: 'Rohan Verma',
-    role: 'Lead Business Intelligence & Analytics',
-    company: 'McKinsey & Company',
-    course: 'Business Analyst Specialization',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80',
-    rating: 4.8,
-    reviewsCount: 76,
-    mentees: 130,
-    status: 'Active',
-    experience: '7+ Years',
-    bio: 'Consultant passionate about turning raw enterprise data into actionable business strategy with SQL & Tableau.'
-  },
-  {
-    id: 'm6',
-    name: 'Sneha Kapoor',
-    role: 'Design Director & UX Lead',
-    company: 'Figma',
-    course: 'UI/UX Design & User Research',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&q=80',
-    rating: 4.9,
-    reviewsCount: 94,
-    mentees: 175,
-    status: 'Active',
-    experience: '8+ Years',
-    bio: 'Design system creator and advocate for human-centered design, user testing, and interactive prototyping.'
-  }
 ];
 
 const PRESET_MENTOR_AVATARS = [
@@ -174,16 +88,9 @@ export default function AdminPanel() {
   const [filter, setFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Mentors state and management
-  const [mentors, setMentors] = useState(() => {
-    try {
-      const saved = localStorage.getItem('careercore_lms_mentors_v1');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to load mentors', e);
-    }
-    return INITIAL_MENTORS;
-  });
+  // Mentors state and management - directly synced with live Supabase
+  const [mentors, setMentors] = useState([]);
+  const [mentorsLoading, setMentorsLoading] = useState(true);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [mentorForm, setMentorForm] = useState({
     id: '',
@@ -201,14 +108,28 @@ export default function AdminPanel() {
   });
   const [mentorStatusFilter, setMentorStatusFilter] = useState('ALL');
 
-  // Save mentors to localStorage
+  // Sync mentors with live Supabase on load
   useEffect(() => {
-    try {
-      localStorage.setItem('careercore_lms_mentors_v1', JSON.stringify(mentors));
-    } catch (e) {
-      console.error('Failed to save mentors', e);
+    async function loadMentorsFromSupabase() {
+      try {
+        const { data, error } = await supabase.from('mentors').select('*');
+        if (!error && data) {
+          const normalized = data.map(m => ({
+            ...m,
+            reviewsCount: m.reviews_count ?? m.reviewsCount ?? 100,
+            mentees: m.mentees_count ?? m.mentees ?? 150
+          }));
+          setMentors(normalized);
+          localStorage.setItem('careercore_lms_mentors_v1', JSON.stringify(normalized));
+        }
+      } catch (err) {
+        console.warn('Failed to load mentors from Supabase:', err);
+      } finally {
+        setMentorsLoading(false);
+      }
     }
-  }, [mentors]);
+    loadMentorsFromSupabase();
+  }, []);
 
   // Settings State
   const [platformSettings, setPlatformSettings] = useState(() => {
@@ -259,34 +180,86 @@ export default function AdminPanel() {
     setShowMentorModal(true);
   };
 
-  const handleSaveMentor = (e) => {
+  const handleSaveMentor = async (e) => {
     if (e) e.preventDefault();
     if (!mentorForm.name.trim()) return;
 
-    setMentors(prev => {
-      const exists = prev.some(item => item.id === mentorForm.id);
-      if (exists) {
-        return prev.map(item => item.id === mentorForm.id ? mentorForm : item);
+    const payload = {
+      name: mentorForm.name.trim(),
+      role: mentorForm.role.trim(),
+      company: mentorForm.company.trim(),
+      course: mentorForm.course,
+      avatar: mentorForm.avatar,
+      rating: Number(mentorForm.rating) || 4.9,
+      reviews_count: Number(mentorForm.reviewsCount) || 100,
+      mentees_count: Number(mentorForm.mentees) || 150,
+      status: mentorForm.status || 'Active',
+      experience: mentorForm.experience || '5+ Years',
+      bio: mentorForm.bio || ''
+    };
+
+    if (mentorForm.id && !mentorForm.id.startsWith('mentor-') && !mentorForm.id.startsWith('m_')) {
+      payload.id = mentorForm.id;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('mentors')
+        .upsert(payload)
+        .select()
+        .single();
+
+      if (!error && data) {
+        const normalized = {
+          ...data,
+          reviewsCount: data.reviews_count ?? 100,
+          mentees: data.mentees_count ?? 150
+        };
+        setMentors(prev => {
+          const exists = prev.some(item => item.id === normalized.id);
+          if (exists) {
+            return prev.map(item => item.id === normalized.id ? normalized : item);
+          } else {
+            return [normalized, ...prev];
+          }
+        });
       } else {
-        return [mentorForm, ...prev];
+        setMentors(prev => {
+          const exists = prev.some(item => item.id === mentorForm.id);
+          if (exists) {
+            return prev.map(item => item.id === mentorForm.id ? mentorForm : item);
+          } else {
+            return [mentorForm, ...prev];
+          }
+        });
       }
-    });
+    } catch (err) {
+      console.warn('Error saving mentor in Supabase:', err);
+    }
     setShowMentorModal(false);
   };
 
-  const handleDeleteMentor = (mentorId) => {
+  const handleDeleteMentor = async (mentorId) => {
     if (window.confirm('Are you sure you want to remove this mentor profile?')) {
       setMentors(prev => prev.filter(m => m.id !== mentorId));
+      try {
+        await supabase.from('mentors').delete().eq('id', mentorId);
+      } catch (err) {
+        console.error('Failed to delete mentor in Supabase:', err);
+      }
     }
   };
 
-  const handleToggleMentorStatus = (mentorId) => {
-    setMentors(prev => prev.map(m => {
-      if (m.id === mentorId) {
-        return { ...m, status: m.status === 'Active' ? 'On Leave' : 'Active' };
-      }
-      return m;
-    }));
+  const handleToggleMentorStatus = async (mentorId) => {
+    const target = mentors.find(m => m.id === mentorId);
+    if (!target) return;
+    const newStatus = target.status === 'Active' ? 'On Leave' : 'Active';
+    setMentors(prev => prev.map(m => m.id === mentorId ? { ...m, status: newStatus } : m));
+    try {
+      await supabase.from('mentors').update({ status: newStatus }).eq('id', mentorId);
+    } catch (err) {
+      console.warn('Error updating mentor status in Supabase:', err);
+    }
   };
 
   const filteredMentors = mentors.filter(m => {
