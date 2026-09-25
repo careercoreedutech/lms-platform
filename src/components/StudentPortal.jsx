@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
   CheckCircle2, 
+  Circle,
   ChevronDown, 
   ChevronUp, 
   ChevronLeft,
@@ -22,57 +23,435 @@ import {
   LayoutGrid,
   BookOpen,
   ClipboardCheck,
-  ChevronsRight
+  ChevronsRight,
+  File,
+  GraduationCap,
+  User,
+  Lock,
+  ArrowRight,
+  ArrowLeft,
+  ShieldCheck
 } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import { supabase, getProtectedVideoUrl } from '../lib/supabase';
+import SecureVideoPlayer from './SecureVideoPlayer';
+import FeedbackModal from './FeedbackModal';
 
 export default function StudentPortal() {
-  const { currentUser, courses, logout, setActiveView } = useLms();
+  const { currentUser, courses, logout, setActiveView, syncUsersFromSupabase, loginStudent } = useLms();
+  const [studentUsername, setStudentUsername] = useState('');
+  const [studentPassword, setStudentPassword] = useState('');
+  const [studentAuthError, setStudentAuthError] = useState('');
+  const [studentAuthenticating, setStudentAuthenticating] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('RESOURCES');
   const [expandedWeeks, setExpandedWeeks] = useState({ 0: true, 1: false, 2: false });
-  const [activeModalItem, setActiveModalItem] = useState(null); // Item to view in Modal
-  const [completedItemIds, setCompletedItemIds] = useState({});
   const [sidebarRailTab, setSidebarRailTab] = useState('articles'); // 'all' | 'articles' | 'quiz'
+  const [activeModalItem, setActiveModalItem] = useState(null); // Item currently open in reader modal
+  const [protectedVideoUrls, setProtectedVideoUrls] = useState({}); // Signed Supabase URLs for private video streaming
+
+  // Anti-Piracy DRM: Intercept and prevent right-clicks, inspect, and downloads while reader is open
+  useEffect(() => {
+    if (!activeModalItem) return;
+
+    const handleGlobalContextMenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    };
+
+    const handleGlobalKeyDown = (e) => {
+      // Intercept Ctrl+S / Cmd+S (Save), Ctrl+U (Source), Ctrl+P (Print)
+      if ((e.ctrlKey || e.metaKey) && ['s', 'u', 'p', 'S', 'U', 'P'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+
+    window.addEventListener('contextmenu', handleGlobalContextMenu, { capture: true });
+    window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
+
+    return () => {
+      window.removeEventListener('contextmenu', handleGlobalContextMenu, { capture: true });
+      window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
+    };
+  }, [activeModalItem]);
+
+  // ── Progress persistence (localStorage + Supabase cloud sync) ───────────────
+  const studentIdentifier = currentUser?.id || currentUser?.username || currentUser?.email || 'default_student';
+  const progressKey = `careercore_progress_${studentIdentifier}_${currentUser?.course || 'default'}`;
+
+  // Multi-identifier array to reliably match student_progress rows across UUID, username, or email
+  const possibleStudentIds = [currentUser?.id, currentUser?.username, currentUser?.email]
+    .filter(Boolean)
+    .map(String);
+
+  const [completedItemIds, setCompletedItemIds] = useState(() => {
+    try {
+      const saved = localStorage.getItem(progressKey);
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  // Whenever progressKey changes (e.g. currentUser resolves from context), load its local cached progress
+  useEffect(() => {
+    if (!studentIdentifier || studentIdentifier === 'default_student') return;
+    try {
+      const saved = localStorage.getItem(progressKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          setCompletedItemIds(prev => ({ ...prev, ...parsed }));
+        }
+      }
+    } catch {}
+  }, [progressKey, studentIdentifier]);
+
+  // Load progress from Supabase on mount/auth change and merge with local state
+  useEffect(() => {
+    let isMounted = true;
+    async function loadProgressFromSupabase() {
+      if (possibleStudentIds.length === 0) return;
+      try {
+        const { data, error } = await supabase
+          .from('student_progress')
+          .select('item_id, status')
+          .in('student_id', possibleStudentIds);
+
+        if (!error && Array.isArray(data) && isMounted) {
+          const cloudMap = {};
+          data.forEach(row => {
+            if (row.item_id && (row.status === 'COMPLETED' || row.status === 'completed')) {
+              cloudMap[row.item_id] = true;
+            }
+          });
+          setCompletedItemIds(prev => {
+            const merged = { ...prev, ...cloudMap };
+            try {
+              if (studentIdentifier !== 'default_student') {
+                localStorage.setItem(progressKey, JSON.stringify(merged));
+              }
+            } catch {}
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn('Supabase progress load notice:', err);
+      }
+    }
+    loadProgressFromSupabase();
+    return () => { isMounted = false; };
+  }, [studentIdentifier, progressKey]);
+
+  // Persist locally whenever completedItemIds changes (only for valid student accounts)
+  useEffect(() => {
+    if (!studentIdentifier || studentIdentifier === 'default_student') return;
+    try { localStorage.setItem(progressKey, JSON.stringify(completedItemIds)); } catch {}
+  }, [completedItemIds, progressKey, studentIdentifier]);
+
+  // Find enrolled course or default to matching course title or first available
+  const courseData = courses.find(c => c.title === currentUser?.course)
+    || courses.find(c => c.title?.toLowerCase() === (currentUser?.course || '').toLowerCase())
+    || courses.find(c => c.title?.toLowerCase().includes((currentUser?.course || '').toLowerCase()))
+    || courses[0];
+  const sections = courseData?.sections || [];
+  const allCourseItems = sections.flatMap(s => s.items || []);
+
+  // Helper to extract multi-blocks for an item
+  const getBlocksForItem = useCallback((item) => {
+    if (!item) return [];
+    if (Array.isArray(item.blocks) && item.blocks.length > 0) {
+      return item.blocks;
+    }
+    const nDoc = item.notionDoc || item.notion_doc || '';
+    if (typeof nDoc === 'string' && nDoc.startsWith('<!--CC_BLOCKS_DATA:')) {
+      const endIdx = nDoc.indexOf('-->');
+      if (endIdx !== -1) {
+        try {
+          const jsonStr = nDoc.substring('<!--CC_BLOCKS_DATA:'.length, endIdx);
+          const parsed = JSON.parse(jsonStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        } catch (e) {
+          console.warn('Failed to parse CC_BLOCKS_DATA in StudentPortal:', e);
+        }
+      }
+    }
+    const type = item.contentType || 'video';
+    const fallbackPath = item.videoStoragePath || 
+      (item.videoUrl && !item.videoUrl.startsWith('http') && !item.videoUrl.startsWith('blob:') ? item.videoUrl : '') ||
+      (type === 'video' && (item.title?.includes('Day 1') || !item.videoUrl) ? 'courses/1789887976311_AirBnB_Concept_Ad.mp4' : '');
+
+    return [{
+      id: item.id ? `block_${item.id}` : 'block_init',
+      type: type,
+      videoFileName: item.videoFileName || (fallbackPath ? 'AirBnB_Concept_Ad.mp4' : ''),
+      videoBlobUrl: item.videoBlobUrl || '',
+      videoUrl: item.videoUrl || fallbackPath,
+      videoStoragePath: fallbackPath,
+      notionDoc: item.notionDoc || (type === 'notion' ? '# Study Article\n\nWrite lesson notes here...' : ''),
+      quizQuestions: item.quizQuestions || (type === 'quiz' ? [{ question: 'Sample Question', options: ['Option A', 'Option B'], correctIndex: 0 }] : []),
+      resourceFileName: item.resourceFileName || ''
+    }];
+  }, []);
+
+  // Helper to check if a specific block is completed
+  const isBlockCompleted = useCallback((item, block, blockIdx) => {
+    if (!item) return false;
+    const blockId = block?.id || `b_${item.id}_${blockIdx}`;
+    
+    // Explicit block completion state
+    if (completedItemIds[blockId] === true) return true;
+    if (completedItemIds[blockId] === false) return false;
+
+    // Check parent item completion
+    if (completedItemIds[item.id]) {
+      const blocks = getBlocksForItem(item);
+      // If item only has 1 block, it's complete
+      if (blocks.length <= 1) return true;
+      // If item has multiple blocks, only block 0 was completed under old single-item completion;
+      // newly added blocks (blockIdx > 0) are not complete until watched/marked
+      if (blockIdx === 0) return true;
+    }
+    return false;
+  }, [completedItemIds, getBlocksForItem]);
+
+  // Helper to check if a topic item is fully completed (all its blocks must be complete)
+  const isItemCompleted = useCallback((item) => {
+    if (!item) return false;
+    const blocks = getBlocksForItem(item);
+    if (blocks.length === 0) return Boolean(completedItemIds[item.id]);
+    return blocks.every((b, idx) => isBlockCompleted(item, b, idx));
+  }, [getBlocksForItem, isBlockCompleted, completedItemIds]);
+
+  // Accurate granular progress tracking across all blocks (units of learning)
+  const allBlocksList = sections.flatMap(s => s.items || []).flatMap(item => {
+    const blocks = getBlocksForItem(item);
+    return blocks.map((b, idx) => ({ item, block: b, idx }));
+  });
+
+  const totalLessons = allBlocksList.length > 0 ? allBlocksList.length : allCourseItems.length;
+  const completedLessonsCount = allBlocksList.length > 0
+    ? allBlocksList.filter(({ item, block, idx }) => isBlockCompleted(item, block, idx)).length
+    : allCourseItems.filter(item => isItemCompleted(item)).length;
+
+  const progressPercent = totalLessons > 0 ? Math.min(100, Math.round((completedLessonsCount / totalLessons) * 100)) : 0;
+  const isCourseFullyCompleted = totalLessons > 0 && completedLessonsCount >= totalLessons;
+
+  // Identify next lesson to continue or review
+  const nextIncompleteItem = allCourseItems.find(item => !isItemCompleted(item));
+  const featuredItem = nextIncompleteItem || allCourseItems[allCourseItems.length - 1] || sections[0]?.items[0];
+  const isFeaturedCompleted = featuredItem && isItemCompleted(featuredItem);
+
+  // Mark all blocks of a lesson as complete: saves locally immediately and syncs to Supabase cloud
+  const markComplete = useCallback(async (itemId, score = null) => {
+    if (!itemId) return;
+
+    const targetItem = allCourseItems.find(it => it.id === itemId) || (activeModalItem?.id === itemId ? activeModalItem : null);
+    const blocks = targetItem ? getBlocksForItem(targetItem) : [];
+
+    // Mark item AND all its constituent blocks as completed
+    const updatedIds = { ...completedItemIds, [itemId]: true };
+    blocks.forEach((b, idx) => {
+      const bId = b.id || `b_${itemId}_${idx}`;
+      updatedIds[bId] = true;
+    });
+
+    setCompletedItemIds(updatedIds);
+    try {
+      if (studentIdentifier !== 'default_student') {
+        localStorage.setItem(progressKey, JSON.stringify(updatedIds));
+      }
+    } catch {}
+
+    // Cloud sync to Supabase student_progress
+    const primaryStudentId = String(currentUser?.id || studentIdentifier);
+    if (primaryStudentId && primaryStudentId !== 'default_student') {
+      try {
+        const payload = {
+          student_id: primaryStudentId,
+          item_id: String(itemId),
+          status: 'COMPLETED',
+          updated_at: new Date().toISOString()
+        };
+        if (score !== null) {
+          payload.quiz_score = typeof score === 'object' ? `${score.correct}/${score.total}` : String(score);
+        }
+
+        const { data: existing } = await supabase
+          .from('student_progress')
+          .select('id')
+          .in('student_id', possibleStudentIds)
+          .eq('item_id', String(itemId))
+          .maybeSingle();
+
+        if (existing?.id) {
+          await supabase.from('student_progress').update(payload).eq('id', existing.id);
+        } else {
+          await supabase.from('student_progress').insert(payload);
+        }
+
+        // Also upsert individual block progress rows
+        for (let idx = 0; idx < blocks.length; idx++) {
+          const b = blocks[idx];
+          const bId = b.id || `b_${itemId}_${idx}`;
+          await supabase.from('student_progress').upsert({
+            student_id: primaryStudentId,
+            item_id: String(bId),
+            status: 'COMPLETED',
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'student_id,item_id' });
+        }
+
+        // Update enrollments & profiles progress_percent in Supabase
+        const targetCourseId = courseData?.id;
+        if (targetCourseId && currentUser?.id) {
+          const updatedBlocksList = (courseData?.sections || []).flatMap(s => s.items || []).flatMap(it => {
+            const blks = getBlocksForItem(it);
+            return blks.map((b, i) => ({ it, b, i }));
+          });
+          const currentTotal = updatedBlocksList.length > 0 ? updatedBlocksList.length : 1;
+          const updatedLessonsCount = updatedBlocksList.filter(({ it, b, i }) => {
+            const bId = b.id || `b_${it.id}_${i}`;
+            if (it.id === itemId) return true;
+            return updatedIds[bId] || (i === 0 && updatedIds[it.id]);
+          }).length;
+
+          const pct = Math.min(100, Math.round((updatedLessonsCount / currentTotal) * 100));
+
+          await supabase
+            .from('enrollments')
+            .update({ progress_percent: pct })
+            .eq('student_id', currentUser.id)
+            .eq('course_id', targetCourseId);
+
+          const completedWeeksCount = (courseData?.sections || []).filter(sec => 
+            (sec.items || []).length > 0 && 
+            (sec.items || []).every(it => it.id === itemId || updatedIds[it.id])
+          ).length;
+
+          try {
+            await supabase
+              .from('profiles')
+              .update({
+                course: courseData?.title || currentUser?.course || 'Full Stack Web Dev',
+                progress_percent: pct,
+                completed_lessons: updatedLessonsCount,
+                total_lessons: currentTotal,
+                completed_weeks: completedWeeksCount,
+                current_week: Math.min((courseData?.sections || []).length || 1, completedWeeksCount + 1),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', currentUser.id);
+          } catch {}
+        }
+
+        if (typeof syncUsersFromSupabase === 'function') {
+          syncUsersFromSupabase();
+        }
+      } catch (err) {
+        console.warn('Supabase progress sync notice:', err);
+      }
+    }
+  }, [allCourseItems, activeModalItem, getBlocksForItem, completedItemIds, studentIdentifier, progressKey, currentUser, possibleStudentIds, courseData, syncUsersFromSupabase]);
+
+  // Toggle or mark individual block completed
+  const toggleBlockComplete = useCallback(async (item, block, blockIdx) => {
+    if (!item) return;
+    const blockId = block?.id || `b_${item.id}_${blockIdx}`;
+    const wasComplete = isBlockCompleted(item, block, blockIdx);
+    const newStatus = !wasComplete;
+
+    const blocks = getBlocksForItem(item);
+    const updatedIds = {
+      ...completedItemIds,
+      [blockId]: newStatus
+    };
+
+    // Check if all blocks of this item are now completed
+    const allComplete = blocks.every((b, idx) => {
+      const bId = b.id || `b_${item.id}_${idx}`;
+      if (idx === blockIdx) return newStatus;
+      return updatedIds[bId] !== undefined ? updatedIds[bId] : isBlockCompleted(item, b, idx);
+    });
+
+    updatedIds[item.id] = allComplete;
+    setCompletedItemIds(updatedIds);
+
+    try {
+      if (studentIdentifier !== 'default_student') {
+        localStorage.setItem(progressKey, JSON.stringify(updatedIds));
+      }
+    } catch {}
+
+    const primaryStudentId = String(currentUser?.id || studentIdentifier);
+    if (primaryStudentId && primaryStudentId !== 'default_student') {
+      try {
+        await supabase.from('student_progress').upsert({
+          student_id: primaryStudentId,
+          item_id: String(blockId),
+          status: newStatus ? 'COMPLETED' : 'IN_PROGRESS',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'student_id,item_id' });
+
+        await supabase.from('student_progress').upsert({
+          student_id: primaryStudentId,
+          item_id: String(item.id),
+          status: allComplete ? 'COMPLETED' : 'IN_PROGRESS',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'student_id,item_id' });
+
+        const targetCourseId = courseData?.id;
+        if (targetCourseId && currentUser?.id) {
+          const updatedBlocksList = (courseData?.sections || []).flatMap(s => s.items || []).flatMap(it => {
+            const blks = getBlocksForItem(it);
+            return blks.map((b, i) => ({ it, b, i }));
+          });
+          const currentTotal = updatedBlocksList.length > 0 ? updatedBlocksList.length : 1;
+          const updatedLessonsCount = updatedBlocksList.filter(({ it, b, i }) => {
+            const bId = b.id || `b_${it.id}_${i}`;
+            if (it.id === item.id && i === blockIdx) return newStatus;
+            return updatedIds[bId] !== undefined ? updatedIds[bId] : isBlockCompleted(it, b, i);
+          }).length;
+
+          const pct = Math.min(100, Math.round((updatedLessonsCount / currentTotal) * 100));
+
+          await supabase
+            .from('enrollments')
+            .update({ progress_percent: pct })
+            .eq('student_id', currentUser.id)
+            .eq('course_id', targetCourseId);
+
+          try {
+            await supabase
+              .from('profiles')
+              .update({
+                progress_percent: pct,
+                completed_lessons: updatedLessonsCount,
+                total_lessons: currentTotal,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', currentUser.id);
+          } catch {}
+        }
+
+        if (typeof syncUsersFromSupabase === 'function') {
+          syncUsersFromSupabase();
+        }
+      } catch (err) {
+        console.warn('Block sync notice:', err);
+      }
+    }
+  }, [completedItemIds, isBlockCompleted, getBlocksForItem, studentIdentifier, progressKey, currentUser, courseData, syncUsersFromSupabase]);
 
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(null);
 
-  if (!currentUser) return null;
-
-  // Helper to extract multi-blocks for an item
-  const getBlocksForItem = (item) => {
-    if (!item) return [];
-    if (Array.isArray(item.blocks) && item.blocks.length > 0) {
-      return item.blocks;
-    }
-    const type = item.contentType || 'video';
-    return [{
-      id: 'block_init_' + (item.id || Date.now()),
-      type: type,
-      videoFileName: item.videoFileName || '',
-      videoBlobUrl: item.videoBlobUrl || '',
-      videoUrl: item.videoUrl || '',
-      notionDoc: item.notionDoc || (type === 'notion' ? '# Study Article\n\nWrite lesson notes here...' : ''),
-      quizQuestions: item.quizQuestions || (type === 'quiz' ? [{ question: 'Sample Question', options: ['Option A', 'Option B'], correctIndex: 0 }] : []),
-      resourceFileName: item.resourceFileName || ''
-    }];
-  };
-
-  // Find enrolled course or default to matching course title or first available
-  const courseData = courses.find(c => c.title === currentUser?.course) 
-    || courses.find(c => c.title?.toLowerCase() === (currentUser?.course || '').toLowerCase())
-    || courses.find(c => c.title?.toLowerCase().includes((currentUser?.course || '').toLowerCase()))
-    || courses[0];
-  const sections = courseData?.sections || [];
-
   const toggleWeek = (index) => {
     setExpandedWeeks(prev => ({ ...prev, [index]: !prev[index] }));
-  };
-
-  const markComplete = (itemId) => {
-    setCompletedItemIds(prev => ({ ...prev, [itemId]: true }));
   };
 
   const openItemModal = (item) => {
@@ -82,6 +461,37 @@ export default function StudentPortal() {
     setQuizScore(null);
   };
 
+  // Automatically resolve Supabase protected video URLs for active topic blocks
+  useEffect(() => {
+    if (!activeModalItem) {
+      setProtectedVideoUrls({});
+      return;
+    }
+    const blocks = getBlocksForItem(activeModalItem);
+    blocks.forEach(async (b, idx) => {
+      // ONLY resolve this block's target; do NOT fallback to activeModalItem for idx > 0
+      const rawTarget = b.videoStoragePath || 
+        b.videoUrl ||
+        (idx === 0 ? (activeModalItem?.videoStoragePath || activeModalItem?.videoUrl) : '');
+
+      if (rawTarget && !rawTarget.startsWith('blob:')) {
+        try {
+          const signed = await getProtectedVideoUrl(rawTarget, 86400);
+          if (signed) {
+            setProtectedVideoUrls(prev => ({ 
+              ...prev, 
+              [b.id]: signed,
+              [idx]: signed,
+              ...(idx === 0 ? { [activeModalItem.id]: signed, 'active': signed } : {})
+            }));
+          }
+        } catch (e) {
+          console.warn('Could not load protected video URL:', e);
+        }
+      }
+    });
+  }, [activeModalItem]);
+
   const handleQuizSubmit = (questions) => {
     if (!questions) return;
     let correct = 0;
@@ -90,16 +500,26 @@ export default function StudentPortal() {
         correct += 1;
       }
     });
-    setQuizScore({ correct, total: questions.length });
+    const finalScore = { correct, total: questions.length };
+    setQuizScore(finalScore);
     setQuizSubmitted(true);
-    markComplete(activeModalItem.id);
+    markComplete(activeModalItem.id, finalScore);
   };
 
   // Helper to render Notion Markdown Text
   const renderNotionContent = (contentStr) => {
     if (!contentStr) return <p className="text-gray-500">No document content added yet for this topic.</p>;
 
-    const lines = contentStr.split('\n');
+    let cleanStr = contentStr;
+    if (typeof cleanStr === 'string' && cleanStr.startsWith('<!--CC_BLOCKS_DATA:')) {
+      const endIdx = cleanStr.indexOf('-->');
+      if (endIdx !== -1) {
+        cleanStr = cleanStr.substring(endIdx + 3).replace(/^\n/, '');
+      }
+    }
+    if (!cleanStr.trim()) return <p className="text-gray-500">No document content added yet for this topic.</p>;
+
+    const lines = cleanStr.split('\n');
     return lines.map((line, idx) => {
       if (line.startsWith('# ')) {
         return <h1 key={idx} className="text-2xl font-extrabold text-[#0A317B] my-3 border-b border-gray-200 pb-2">{line.replace('# ', '')}</h1>;
@@ -127,22 +547,149 @@ export default function StudentPortal() {
     });
   };
 
+  const handleStudentAuth = async (e) => {
+    if (e) e.preventDefault();
+    if (!studentUsername.trim()) {
+      setStudentAuthError('Please enter your username or email.');
+      return;
+    }
+    if (!studentPassword.trim()) {
+      setStudentAuthError('Please enter your password.');
+      return;
+    }
+    setStudentAuthError('');
+    setStudentAuthenticating(true);
+    try {
+      const res = await loginStudent(studentUsername.trim(), studentPassword.trim());
+      if (res && !res.success) {
+        setStudentAuthError(res.message || 'Invalid credentials. Access Denied.');
+      }
+    } catch (err) {
+      setStudentAuthError('Authentication error: ' + (err?.message || err));
+    } finally {
+      setStudentAuthenticating(false);
+    }
+  };
+
+  // ── STUDENT PORTAL AUTHENTICATION GATE ───────────────────────
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between font-sans text-[#0A317B]">
+        {/* Top Header */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setActiveView('landing')} className="cursor-pointer">
+              <img src="/logo.png" alt="CareerCore Logo" className="h-8 w-auto" />
+            </button>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0D9488] text-[11px] font-extrabold uppercase tracking-wider">
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>STUDENT PORTAL ACCESS</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveView('landing')}
+            className="text-xs font-bold text-gray-500 hover:text-[#0A317B] flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Site</span>
+          </button>
+        </header>
+
+        {/* Center Login Card */}
+        <div className="max-w-md w-full mx-auto px-4 py-12">
+          <div className="bg-white border border-gray-200 rounded-3xl p-8 shadow-xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-teal-50 text-[#0D9488] flex items-center justify-center border border-teal-200 shadow-xs">
+                <GraduationCap className="w-7 h-7" />
+              </div>
+              <h2 className="text-2xl font-black text-[#0A317B] tracking-tight">Student Learning Portal</h2>
+              <p className="text-xs text-gray-500">
+                Sign in with your student credentials to access course materials, video lectures, and track your progress.
+              </p>
+            </div>
+
+            {studentAuthError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
+                {studentAuthError}
+              </div>
+            )}
+
+            <form onSubmit={handleStudentAuth} className="space-y-4">
+              <div>
+                <label className="text-xs font-extrabold text-gray-700 block mb-1.5">
+                  Username or Email
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={studentUsername}
+                    onChange={(e) => { setStudentUsername(e.target.value); setStudentAuthError(''); }}
+                    placeholder="Enter username or email"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-[#1A9C9B] focus:ring-2 focus:ring-[#1A9C9B]/20 text-sm font-semibold text-gray-900 outline-none transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-extrabold text-gray-700 block mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    value={studentPassword}
+                    onChange={(e) => { setStudentPassword(e.target.value); setStudentAuthError(''); }}
+                    placeholder="••••••••••••"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-[#1A9C9B] focus:ring-2 focus:ring-[#1A9C9B]/20 text-sm font-semibold text-gray-900 outline-none transition-all placeholder:text-gray-400"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={studentAuthenticating}
+                className="w-full py-3.5 rounded-xl bg-[#0A317B] hover:bg-[#08265e] text-white font-black text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 mt-2"
+              >
+                {studentAuthenticating ? 'Authenticating...' : 'Enter Student Portal'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <footer className="py-4 text-center text-xs text-gray-400">
+          CareerCore LMS Platform · Secured Student Learning Portal
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#fdfbf7] text-slate-800 font-sans">
       
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+      {/* Top Navbar matching Mentor Portal styling */}
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-40 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button 
               onClick={() => setActiveView('landing')}
-              className="flex items-center gap-2 cursor-pointer"
+              className="cursor-pointer shrink-0"
             >
-              <img src="/logo.png" alt="CareerCore Logo" className="h-8 w-auto" />
+              <img src="/logo.png" alt="CareerCore Logo" className="h-8 sm:h-9 w-auto object-contain" />
             </button>
 
-            <div className="relative hidden md:block w-72">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F8F6] border border-[#BDEEE9] text-[#0D9488] font-extrabold text-[11px] uppercase tracking-wider shrink-0">
+              <GraduationCap className="w-3.5 h-3.5 text-[#0D9488]" />
+              <span>STUDENT PORTAL</span>
+            </div>
+
+            {/* Kept Search Option Same */}
+            <div className="relative hidden md:block w-60 lg:w-72 ml-2">
               <Search className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
               <input
                 type="text"
@@ -152,44 +699,49 @@ export default function StudentPortal() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-bold text-slate-700">
-            <nav className="hidden lg:flex items-center gap-6">
-              <div className="flex items-center gap-1 cursor-pointer hover:text-emerald-700">
-                <span>Courses</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-              <div className="flex items-center gap-1 cursor-pointer hover:text-emerald-700">
-                <span>Tutorials</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-              <div className="flex items-center gap-1 cursor-pointer hover:text-emerald-700">
-                <span>Practice</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-              <div className="flex items-center gap-1 cursor-pointer hover:text-emerald-700">
-                <span>Jobs</span>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-500" />
-              </div>
-            </nav>
-
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
-              <div className="p-1.5 rounded-full hover:bg-gray-100 cursor-pointer relative">
-                <Bell className="w-4 h-4 text-slate-600" />
-                <span className="w-4 h-4 rounded-full bg-red-500 text-white font-mono text-[9px] font-bold absolute -top-1 -right-1 flex items-center justify-center">86</span>
+          {/* Right Header Controls matching Mentor Portal */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Student Profile Pill */}
+            <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-50/90 hover:bg-slate-100/90 border border-slate-200/80 px-2.5 py-1.5 rounded-2xl transition-all shadow-2xs">
+              <div className="relative shrink-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-[#0A317B] to-[#1A9C9B] text-white font-extrabold flex items-center justify-center text-sm shadow-xs">
+                  {(currentUser?.name || 'S').charAt(0).toUpperCase()}
+                </div>
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white bg-emerald-500"
+                  title="Active Student"
+                />
               </div>
 
-              <div className="w-8 h-8 rounded-full bg-[#1A9C9B] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                {currentUser.name.charAt(0)}
+              <div className="text-left hidden sm:block pr-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-extrabold text-[#0F172A] leading-tight">
+                    {currentUser?.name || 'Enrolled Student'}
+                  </p>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                  <span className="font-semibold text-slate-500">STUDENT</span>
+                  {(currentUser?.course || courseData?.title) ? ` · ${currentUser?.course || courseData?.title}` : ''}
+                </p>
               </div>
-
-              <button
-                onClick={logout}
-                className="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-red-50 hover:text-red-600 text-slate-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Logout</span>
-              </button>
             </div>
+
+            <button
+              onClick={() => setActiveView('landing')}
+              className="px-3.5 py-2 rounded-xl bg-[#EEF2F6] hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer hidden sm:block"
+            >
+              Return to Site
+            </button>
+
+            <button
+              onClick={logout}
+              className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-[#FEECEB] text-rose-600 hover:bg-rose-100 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-xs"
+              title="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
           </div>
 
         </div>
@@ -207,18 +759,24 @@ export default function StudentPortal() {
 
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs text-slate-600 font-bold max-w-md">
-                <span>{Object.keys(completedItemIds).length} of 337 Complete. ({Math.min(100, Object.keys(completedItemIds).length * 5)}%)</span>
+                <span>{completedLessonsCount} of {totalLessons} Complete. ({progressPercent}%)</span>
+                {isCourseFullyCompleted && (
+                  <span className="text-emerald-600 flex items-center gap-1 font-extrabold text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    Completed
+                  </span>
+                )}
               </div>
 
               <div className="w-80 sm:w-96 bg-gray-200 h-2 rounded-full overflow-hidden">
                 <div 
-                  className="bg-[#1A9C9B] h-full rounded-full transition-all duration-500" 
-                  style={{ width: `${Math.min(100, Object.keys(completedItemIds).length * 5)}%` }}
+                  className={`h-full rounded-full transition-all duration-500 ${isCourseFullyCompleted ? 'bg-emerald-500' : 'bg-[#1A9C9B]'}`} 
+                  style={{ width: `${progressPercent}%` }}
                 />
               </div>
 
               <p className="text-[11px] text-gray-500">
-                Progress updates in real-time.
+                {isCourseFullyCompleted ? '🎉 Congratulations! You have finished all lessons in this course.' : 'Progress updates in real-time.'}
               </p>
             </div>
           </div>
@@ -229,7 +787,10 @@ export default function StudentPortal() {
               <span>Get Certificates</span>
             </button>
 
-            <button className="px-5 py-2.5 rounded-xl bg-white border border-[#1A9C9B] text-[#1A9C9B] hover:bg-teal-50 font-bold text-xs transition-all flex items-center gap-2 cursor-pointer">
+            <button 
+              onClick={() => setFeedbackModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-white border border-[#1A9C9B] text-[#1A9C9B] hover:bg-teal-50 font-bold text-xs shadow-2xs hover:shadow-xs transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
               <MessageSquare className="w-4 h-4" />
               <span>Share Feedback</span>
             </button>
@@ -257,36 +818,68 @@ export default function StudentPortal() {
           ))}
         </div>
 
-        {/* Main Grid: Course Structure Tree + Placement Banner */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Left Column: Folders / Accordion Tree */}
-          <div className="lg:col-span-8 space-y-4">
+        {/* Main Course Structure Section */}
+        <div className="max-w-5xl space-y-4">
             
             {/* Top Featured Item Card */}
-            <div className="p-4 rounded-2xl bg-white border border-gray-200 shadow-xs flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-50 text-[#1A9C9B] flex items-center justify-center shrink-0">
-                  <Play className="w-5 h-5 fill-[#1A9C9B]" />
+            {featuredItem && (
+              <div className={`p-4 rounded-2xl border shadow-xs flex items-center justify-between gap-4 transition-all ${
+                isCourseFullyCompleted ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-gray-200'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    isCourseFullyCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-teal-50 text-[#1A9C9B]'
+                  }`}>
+                    {isCourseFullyCompleted ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                    ) : (
+                      <Play className="w-5 h-5 fill-[#1A9C9B]" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">
+                        {featuredItem.title || 'Course Overview & Setup'}
+                      </h4>
+                      {isFeaturedCompleted && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700">
+                          Completed
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+                      <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" />
+                      <span>{courseData?.title}</span>
+                      {isCourseFullyCompleted && (
+                        <span className="text-emerald-600 font-semibold">• 100% Finished</span>
+                      )}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900">
-                    {sections[0]?.items[0]?.title || 'Course Overview & Setup'}
-                  </h4>
-                  <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-0.5">
-                    <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" />
-                    <span>{courseData?.title}</span>
-                  </p>
-                </div>
-              </div>
 
-              <button 
-                onClick={() => openItemModal(sections[0]?.items[0] || { title: 'Course Overview', contentType: 'notion', notionDoc: '# Welcome to the Course' })}
-                className="px-5 py-2 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer"
-              >
-                Continue
-              </button>
-            </div>
+                <button 
+                  onClick={() => openItemModal(featuredItem)}
+                  className={`px-5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    isCourseFullyCompleted
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                      : completedLessonsCount > 0
+                        ? 'bg-[#1A9C9B] hover:bg-[#147d7c] text-white'
+                        : 'bg-[#0A317B] hover:bg-[#061e4f] text-white'
+                  }`}
+                >
+                  {isCourseFullyCompleted ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Review Lesson</span>
+                    </>
+                  ) : completedLessonsCount > 0 ? (
+                    <span>Continue</span>
+                  ) : (
+                    <span>Start Learning</span>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* Hierarchical Sections Accordion Tree */}
             <div className="space-y-3">
@@ -334,7 +927,9 @@ export default function StudentPortal() {
                           {sec.items?.map((item, itemIdx) => {
                             const isVideo = item.contentType === 'video';
                             const isQuiz = item.contentType === 'quiz';
-                            const isCompleted = completedItemIds[item.id || itemIdx];
+                            const itemBlocks = getBlocksForItem(item);
+                            const isCompleted = isItemCompleted(item);
+                            const completedBlocksCount = itemBlocks.filter((b, idx) => isBlockCompleted(item, b, idx)).length;
 
                             return (
                               <div 
@@ -369,15 +964,20 @@ export default function StudentPortal() {
                                           NOTION DOC
                                         </span>
                                       )}
+                                      {itemBlocks.length > 1 && (
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded font-bold font-mono bg-slate-100 text-slate-700">
+                                          {completedBlocksCount}/{itemBlocks.length} Blocks
+                                        </span>
+                                      )}
                                     </div>
 
                                     <div className="flex items-center gap-3 text-[11px] text-gray-500 font-medium">
                                       <span className="flex items-center gap-1">
-                                        <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" /> {item.articles || 2} Articles
+                                        <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" /> {itemBlocks.filter(b => b.type === 'notion').length || item.articles || 1} Articles
                                       </span>
-                                      {item.mcqs !== undefined && (
+                                      {(item.mcqs !== undefined || itemBlocks.some(b => b.type === 'quiz')) && (
                                         <span className="flex items-center gap-1">
-                                          <HelpCircle className="w-3.5 h-3.5 text-[#FA9C16]" /> {item.mcqs} MCQ's
+                                          <HelpCircle className="w-3.5 h-3.5 text-[#FA9C16]" /> {item.mcqs || itemBlocks.filter(b => b.type === 'quiz').length} MCQ's
                                         </span>
                                       )}
                                     </div>
@@ -385,9 +985,17 @@ export default function StudentPortal() {
                                 </div>
 
                                 <button className={`px-5 py-1.5 rounded-lg text-white font-bold text-xs shadow-2xs transition-all shrink-0 self-end sm:self-center cursor-pointer ${
-                                  isCompleted ? 'bg-emerald-600' : 'bg-[#1A9C9B] hover:bg-[#147d7c]'
+                                  isCompleted 
+                                    ? 'bg-emerald-600' 
+                                    : completedBlocksCount > 0 
+                                      ? 'bg-amber-600 hover:bg-amber-700' 
+                                      : 'bg-[#1A9C9B] hover:bg-[#147d7c]'
                                 }`}>
-                                  {isCompleted ? '✓ Completed' : item.status || 'Start'}
+                                  {isCompleted 
+                                    ? '✓ Completed' 
+                                    : completedBlocksCount > 0 
+                                      ? `Continue (${Math.round((completedBlocksCount / itemBlocks.length) * 100)}%)` 
+                                      : item.status || 'Start'}
                                 </button>
                               </div>
                             );
@@ -399,37 +1007,6 @@ export default function StudentPortal() {
                 );
               })}
             </div>
-
-          </div>
-
-          {/* Right Column: Program Sidebar Banner */}
-          <div className="lg:col-span-4 space-y-4">
-            
-            <div className="p-6 rounded-3xl bg-white border border-[#1A9C9B]/30 shadow-md text-center space-y-4 relative overflow-hidden">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 text-[#1A9C9B] font-extrabold text-[10px] border border-[#1A9C9B]/30">
-                <Sparkles className="w-3 h-3 fill-[#1A9C9B]" /> CareerCore Ecosystem
-              </div>
-
-              <h4 className="text-xl font-extrabold text-slate-900 leading-snug">
-                One Program. <br /> Every round covered.
-              </h4>
-
-              <div className="p-3 rounded-2xl bg-[#0A317B] text-white space-y-1 text-xs font-mono font-bold shadow-inner">
-                <div className="text-[#FA9C16] text-sm">Placement 360°</div>
-                <div className="text-[10px] text-gray-300">Your Career Starts Here</div>
-              </div>
-
-              <div className="text-xs text-gray-600 font-medium pt-2">
-                Programming • DSA • System Design • Core CS • Aptitude
-              </div>
-
-              <button className="w-full py-2.5 rounded-xl bg-[#FA9C16] hover:bg-[#e0890f] text-white font-extrabold text-xs shadow-sm transition-all cursor-pointer">
-                Unlock Relevant Job Opportunities
-              </button>
-            </div>
-
-          </div>
-
         </div>
 
       </main>
@@ -463,9 +1040,27 @@ export default function StudentPortal() {
 
                 <div className="flex items-center gap-3">
                   {/* Circular Progress Badge */}
-                  <div className="w-8 h-8 rounded-full border-2 border-emerald-500 flex items-center justify-center text-[11px] font-extrabold font-mono text-emerald-800 bg-emerald-50">
-                    {completedItemIds[activeModalItem.id] ? '100%' : '0%'}
-                  </div>
+                  {(() => {
+                    const activeBlocks = getBlocksForItem(activeModalItem);
+                    const completedCount = activeBlocks.filter((b, idx) => isBlockCompleted(activeModalItem, b, idx)).length;
+                    const topicPct = activeBlocks.length > 0 
+                      ? Math.round((completedCount / activeBlocks.length) * 100) 
+                      : (isItemCompleted(activeModalItem) ? 100 : 0);
+                    return (
+                      <div 
+                        className={`w-9 h-9 rounded-full border-2 flex items-center justify-center text-[11px] font-extrabold font-mono transition-all ${
+                          topicPct === 100 
+                            ? 'border-emerald-500 text-emerald-800 bg-emerald-50' 
+                            : topicPct > 0 
+                              ? 'border-[#1A9C9B] text-[#0A317B] bg-teal-50' 
+                              : 'border-gray-300 text-gray-500 bg-gray-50'
+                        }`}
+                        title={`${completedCount} of ${activeBlocks.length} blocks completed`}
+                      >
+                        {topicPct}%
+                      </div>
+                    );
+                  })()}
 
                   <button 
                     onClick={() => setActiveModalItem(null)} 
@@ -556,30 +1151,49 @@ export default function StudentPortal() {
                         if (sidebarRailTab === 'articles') return b.type === 'notion';
                         if (sidebarRailTab === 'quiz') return b.type === 'quiz';
                         return true;
-                      }).map((blk, blkIdx) => (
-                        <div 
-                          key={blk.id || blkIdx}
-                          onClick={() => {
-                            const el = document.getElementById(`block-view-${blk.id || blkIdx}`);
-                            if (el) el.scrollIntoView({ behavior: 'smooth' });
-                          }}
-                          className="p-3 rounded-2xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 transition-all cursor-pointer space-y-1"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <h5 className="text-xs font-bold text-slate-900 leading-snug">
-                              {blk.type === 'video' && (blk.videoFileName || 'Video Lesson')}
-                              {blk.type === 'notion' && 'Article Document'}
-                              {blk.type === 'quiz' && 'MCQ Quiz'}
-                              {blk.type === 'file' && (blk.resourceFileName || 'Resource File')}
-                            </h5>
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 fill-emerald-100 shrink-0" />
+                      }).map((blk, blkIdx) => {
+                        const completed = isBlockCompleted(activeModalItem, blk, blkIdx);
+                        return (
+                          <div 
+                            key={blk.id || blkIdx}
+                            onClick={() => {
+                              const el = document.getElementById(`block-view-${blk.id || blkIdx}`);
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
+                              completed ? 'border-teal-300 bg-teal-50/50 hover:bg-teal-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <h5 className="text-xs font-bold text-slate-900 leading-snug">
+                                {blk.type === 'video' && (blk.videoFileName || `Video Lesson #${blkIdx + 1}`)}
+                                {blk.type === 'notion' && 'Article Document'}
+                                {blk.type === 'quiz' && 'MCQ Quiz'}
+                                {blk.type === 'file' && (blk.resourceFileName || 'Resource File')}
+                              </h5>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleBlockComplete(activeModalItem, blk, blkIdx);
+                                }}
+                                className="cursor-pointer p-0.5"
+                                title={completed ? 'Completed (click to toggle)' : 'Click to mark as complete'}
+                              >
+                                {completed ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 fill-emerald-100 shrink-0" />
+                                ) : (
+                                  <Circle className="w-4 h-4 text-gray-300 hover:text-emerald-500 shrink-0" />
+                                )}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                              <BookOpen className={`w-3 h-3 ${completed ? 'text-emerald-600' : 'text-gray-400'}`} />
+                              <span>Block #{blkIdx + 1} {completed ? '• Complete' : '• Incomplete'}</span>
+                            </p>
                           </div>
-                          <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                            <BookOpen className="w-3 h-3 text-emerald-600" />
-                            <span>Block #{blkIdx + 1}</span>
-                          </p>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       /* Fallback: Section items matching the filter tab */
                       sections.flatMap(s => s.items || []).filter(item => {
@@ -629,58 +1243,60 @@ export default function StudentPortal() {
                       <div id={`block-view-${block.id || blockIdx}`} key={block.id || blockIdx} className="space-y-4">
                         {/* Block Header Divider */}
                         {getBlocksForItem(activeModalItem).length > 1 && (
-                          <div className="flex items-center gap-2 pb-2 border-b border-gray-200/80 text-xs font-bold text-[#0A317B]">
-                            <span className="w-6 h-6 rounded-lg bg-[#1A9C9B] text-white font-mono flex items-center justify-center text-xs">
-                              {blockIdx + 1}
-                            </span>
-                            <span className="uppercase tracking-wider">
-                              {block.type === 'video' && 'Video Lesson Block'}
-                              {block.type === 'notion' && 'Article / Study Document Block'}
-                              {block.type === 'quiz' && 'Interactive MCQ Quiz Block'}
-                              {block.type === 'file' && 'Resource File Attachment Block'}
-                            </span>
+                          <div className="flex items-center justify-between pb-2 border-b border-gray-200/80 text-xs font-bold text-[#0A317B]">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-lg bg-[#1A9C9B] text-white font-mono flex items-center justify-center text-xs">
+                                {blockIdx + 1}
+                              </span>
+                              <span className="uppercase tracking-wider">
+                                {block.type === 'video' && 'Video Lesson Block'}
+                                {block.type === 'notion' && 'Article / Study Document Block'}
+                                {block.type === 'quiz' && 'Interactive MCQ Quiz Block'}
+                                {block.type === 'file' && 'Resource File Attachment Block'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleBlockComplete(activeModalItem, block, blockIdx)}
+                              className={`px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                isBlockCompleted(activeModalItem, block, blockIdx)
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : 'bg-gray-100 hover:bg-emerald-50 text-gray-600 hover:text-emerald-700 border border-gray-200'
+                              }`}
+                            >
+                              <CheckCircle2 className={`w-3.5 h-3.5 ${isBlockCompleted(activeModalItem, block, blockIdx) ? 'text-emerald-600 fill-emerald-100' : 'text-gray-400'}`} />
+                              <span>{isBlockCompleted(activeModalItem, block, blockIdx) ? 'Completed' : 'Mark Complete'}</span>
+                            </button>
                           </div>
                         )}
 
                         {/* BLOCK TYPE 1: DRAG & DROP VIDEO / HTML5 VIDEO PLAYER (PROTECTED) */}
                         {block.type === 'video' && (
-                          <div className="space-y-4">
-                            <div 
-                              onContextMenu={(e) => e.preventDefault()}
-                              className="relative aspect-video rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg flex items-center justify-center text-white select-none group"
-                            >
-                              {block.videoBlobUrl ? (
-                                <video 
-                                  controls 
-                                  controlsList="nodownload"
-                                  disablePictureInPicture
-                                  onContextMenu={(e) => e.preventDefault()}
-                                  autoPlay={blockIdx === 0}
-                                  src={block.videoBlobUrl} 
-                                  className="w-full h-full object-contain pointer-events-auto"
-                                />
-                              ) : (
-                                <iframe
-                                  src={block.videoUrl || activeModalItem.videoUrl || "https://www.youtube.com/embed/dQw4w9WgXcQ"}
-                                  title={activeModalItem.title}
-                                  className="w-full h-full"
-                                  allowFullScreen
-                                />
-                              )}
-
-                              {/* Anti-Piracy Floating Student Watermark */}
-                              <div className="absolute bottom-14 right-4 pointer-events-none opacity-20 text-[10px] font-mono text-white select-none z-10 flex items-center gap-1.5 bg-black/40 px-2 py-0.5 rounded backdrop-blur-xs">
-                                <span>{currentUser?.email || currentUser?.username || 'Student'}</span>
-                                <span>•</span>
-                                <span>CareerCore DRM Protected</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-gray-500 font-mono">
+                          <div className="space-y-3">
+                            <SecureVideoPlayer
+                              src={
+                                protectedVideoUrls[block.id] ||
+                                protectedVideoUrls[blockIdx] ||
+                                (block.videoBlobUrl?.startsWith('blob:') ? block.videoBlobUrl : null) ||
+                                (block.videoUrl?.startsWith('http') ? block.videoUrl : null) ||
+                                (blockIdx === 0 ? (protectedVideoUrls[activeModalItem?.id] || protectedVideoUrls['active'] || (activeModalItem?.videoUrl?.startsWith('http') ? activeModalItem.videoUrl : null)) : null)
+                              }
+                              storagePath={
+                                block.videoStoragePath ||
+                                (block.videoUrl && !block.videoUrl.startsWith('http') && !block.videoUrl.startsWith('blob:') ? block.videoUrl : '') ||
+                                (blockIdx === 0 ? (activeModalItem?.videoStoragePath || (activeModalItem?.videoUrl && !activeModalItem?.videoUrl.startsWith('http') && !activeModalItem?.videoUrl.startsWith('blob:') ? activeModalItem?.videoUrl : '')) : '')
+                              }
+                              title={block.title || activeModalItem?.title}
+                              currentUser={currentUser}
+                              autoPlay={blockIdx === 0}
+                              fileName={block.videoFileName || (blockIdx === 0 ? activeModalItem?.videoFileName : '')}
+                            />
+                            <div className="flex items-center justify-between text-xs text-gray-500 font-mono px-1">
                               <span className="flex items-center gap-1.5">
                                 <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-                                Protected Stream: {block.videoFileName || activeModalItem.videoFileName || 'Secure Video Stream'}
+                                Protected Stream: {block.videoFileName || (blockIdx === 0 ? activeModalItem?.videoFileName : '') || 'Secure Video Stream'}
                               </span>
-                              <span className="text-[11px] text-gray-400">Encrypted • Download Disabled</span>
+                              <span className="text-[11px] text-gray-400 font-semibold">🔒 DRM Protected • Direct Downloads Blocked</span>
                             </div>
                           </div>
                         )}
@@ -840,6 +1456,12 @@ export default function StudentPortal() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Student Feedback Submission Modal */}
+      <FeedbackModal 
+        isOpen={feedbackModalOpen} 
+        onClose={() => setFeedbackModalOpen(false)} 
+      />
     </div>
   );
 }

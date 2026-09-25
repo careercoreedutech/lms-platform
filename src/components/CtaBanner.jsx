@@ -54,7 +54,7 @@ export default function CtaBanner() {
 
             {/* Value Highlights */}
             <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-bold text-gray-200 pt-1">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#1A9C9B]" /> 100% Placement Guarantee</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#1A9C9B]" /> Dedicated Career Acceleration</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#FA9C16]" /> 1-on-1 Mentor Support</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-[#1A9C9B]" /> Real Enterprise Capstones</span>
             </div>

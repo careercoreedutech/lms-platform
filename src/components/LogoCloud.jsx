@@ -12,14 +12,14 @@ import {
 
 export default function LogoCloud() {
   const hiringPartners = [
-    { name: 'Google', icon: Globe, label: 'Alumni Placement' },
+    { name: 'Google', icon: Globe, label: 'Alumni Network' },
     { name: 'Microsoft', icon: Laptop, label: 'Cloud & Tech Partner' },
     { name: 'Amazon', icon: Building2, label: 'Hiring Network' },
     { name: 'Meta', icon: Code, label: 'Tech Recruiter' },
     { name: 'Flipkart', icon: Briefcase, label: 'Campus Hiring' },
     { name: 'TCS', icon: Terminal, label: 'Enterprise Partner' },
     { name: 'Infosys', icon: Award, label: 'Certified Hiring' },
-    { name: 'Wipro', icon: Layers, label: 'Tech Placements' },
+    { name: 'Wipro', icon: Layers, label: 'Tech Careers' },
   ];
 
   return (

@@ -26,7 +26,7 @@ function BotAvatar({ className = "w-full h-full" }) {
       const animationData = (typeof botAnimation === 'object' && botAnimation.default) ? botAnimation.default : botAnimation;
       anim = lottie.loadAnimation({
         container: containerRef.current,
-        renderer: 'svg',
+        renderer: 'canvas',
         loop: true,
         autoplay: true,
         animationData: animationData
@@ -105,7 +105,7 @@ export default function CourseAdvisorBot() {
         { label: 'Product Management (5 Wks)', action: 'select_pm' },
         { label: 'Full Stack Web Dev (12 Wks)', action: 'select_fs' },
         { label: 'AI & Machine Learning Track', action: 'select_ai' },
-        { label: 'Ask about tuition fees & placement', action: 'faq_pricing' }
+        { label: 'Ask about tuition fees & career tracks', action: 'faq_pricing' }
       ]
     }
   ]);
@@ -238,7 +238,7 @@ export default function CourseAdvisorBot() {
 
     if (option.action === 'faq_pricing') {
       addBotMessage(
-        "Tuition & Payment Options:\n\n• Flexible installment plans are available for all courses.\n• Complete money-back placement assistance program.\n• Live mentor guidance & direct code review on every module.\n\nWould you like me to suggest a course for your background?",
+        "Tuition & Payment Options:\n\n• Flexible installment plans are available for all courses.\n• Complete career acceleration program.\n• Live mentor guidance & direct code review on every module.\n\nWould you like me to suggest a course for your background?",
         [
           { label: 'Recommend a course for me', action: 'start_quiz' },
           { label: 'Register / Enroll Now', action: 'trigger_enroll' }
@@ -307,9 +307,9 @@ export default function CourseAdvisorBot() {
         ],
         RECOMMENDED_COURSES[2]
       );
-    } else if (lower.includes('job') || lower.includes('placement') || lower.includes('career') || lower.includes('salary')) {
+    } else if (lower.includes('job') || lower.includes('career') || lower.includes('salary') || lower.includes('hiring')) {
       addBotMessage(
-        "We provide Placement 360° career assistance:\n\n• Resume & LinkedIn optimization\n• 1-on-1 mock technical interviews\n• Exclusive referral network with top hiring tech companies\n• Average graduate salaries range from ₹14 LPA to ₹35 LPA!",
+        "We provide Career 360° assistance:\n\n• Resume & LinkedIn optimization\n• 1-on-1 mock technical interviews\n• Exclusive referral network with top hiring tech companies\n• Average graduate salaries range from ₹14 LPA to ₹35 LPA!",
         [
           { label: 'Find Best Course for Me', action: 'start_quiz' },
           { label: 'Enroll Now', action: 'trigger_enroll' }
@@ -534,7 +534,7 @@ export default function CourseAdvisorBot() {
                 type="text"
                 value={inputQuery}
                 onChange={(e) => setInputQuery(e.target.value)}
-                placeholder="Ask about courses, fees, or placement..."
+                placeholder="Ask about courses, fees, or career tracks..."
                 className="flex-1 px-3.5 py-2.5 rounded-2xl bg-gray-50 border border-gray-200 text-xs font-medium text-[#0A317B] focus:bg-white focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none"
               />
               <button

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase, getProtectedVideoUrl, extractStoragePath } from '../lib/supabase';
 import { 
   Users, 
   User,
@@ -16,6 +17,7 @@ import {
   BarChart3, 
   GraduationCap, 
   ArrowLeft, 
+  ArrowRight,
   Check, 
   ChevronRight, 
   ChevronDown, 
@@ -28,18 +30,158 @@ import {
   Eye,
   Layers,
   Cpu,
-  Cloud
+  Cloud,
+  ShieldCheck,
+  Lock
 } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
 
 export default function TeacherPanel() {
-  const { users, courses, createCourse, deleteCourse, logout, setActiveView, currentUser } = useLms();
+  const { users, courses, createCourse, deleteCourse, logout, setActiveView, currentUser, loginMentor } = useLms();
   
+  // Database Mentors verification state
+  const [dbMentors, setDbMentors] = useState(() => {
+    try {
+      const saved = localStorage.getItem('careercore_lms_mentors_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [];
+  });
+  const [loadingMentors, setLoadingMentors] = useState(true);
+  const [mentorInput, setMentorInput] = useState('');
+  const [mentorLoginError, setMentorLoginError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+
+  useEffect(() => {
+    async function fetchDbMentors() {
+      setLoadingMentors(true);
+      try {
+        const { data, error } = await supabase.from('mentors').select('*');
+        if (!error && data && data.length > 0) {
+          setDbMentors(data);
+        } else {
+          const saved = localStorage.getItem('careercore_lms_mentors_v1');
+          if (saved) {
+            setDbMentors(JSON.parse(saved));
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching mentors from Supabase:', err);
+        const saved = localStorage.getItem('careercore_lms_mentors_v1');
+        if (saved) {
+          setDbMentors(JSON.parse(saved));
+        }
+      } finally {
+        setLoadingMentors(false);
+      }
+    }
+    fetchDbMentors();
+  }, []);
+
+  const isAuthorizedMentor = (currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN') && (
+    currentUser?.role === 'ADMIN' || dbMentors.some(m => 
+      m.id === currentUser.id ||
+      (m.name && m.name.toLowerCase() === currentUser.name?.toLowerCase()) ||
+      (m.email && m.email.toLowerCase() === currentUser.email?.toLowerCase())
+    )
+  );
+
+  const [mentorPassword, setMentorPassword] = useState('');
+
+  const handleMentorAuth = async (e) => {
+    if (e) e.preventDefault();
+    if (!mentorInput.trim()) {
+      setMentorLoginError('Please enter your mentor name or email.');
+      return;
+    }
+    if (!mentorPassword.trim()) {
+      setMentorLoginError('Please enter your mentor password.');
+      return;
+    }
+    setVerifying(true);
+    setMentorLoginError('');
+    try {
+      const res = await loginMentor(mentorInput.trim(), mentorPassword.trim());
+      if (!res.success) {
+        setMentorLoginError(res.message || 'Access Denied: Only registered mentors present in the database can access this portal.');
+      }
+    } catch (err) {
+      setMentorLoginError('Verification failed. Please try again.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const [teacherTab, setTeacherTab] = useState('courses'); // 'courses' | 'analytics'
   const [teacherCourseMode, setTeacherCourseMode] = useState('list'); // 'list' | 'create'
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourseFilter, setSelectedCourseFilter] = useState('ALL');
+
+  // Filter courses strictly for this mentor: only show courses created by this mentor or matching their assigned track
+  const myCourses = courses.filter(course => {
+    if (currentUser?.role === 'ADMIN') return true;
+
+    const mentorName = (currentUser?.name || '').toLowerCase().trim();
+    const mentorId = (currentUser?.id || '').toLowerCase().trim();
+
+    // 1. Check if course was created by this mentor
+    const createdBy = (course.created_by || course.mentor_name || course.instructor || '').toLowerCase().trim();
+    let mentorCreatedMap = {};
+    try {
+      mentorCreatedMap = JSON.parse(localStorage.getItem('careercore_mentor_created_courses') || '{}');
+    } catch (e) {}
+
+    if (
+      (createdBy && (createdBy === mentorName || createdBy === mentorId)) ||
+      (course.id && mentorCreatedMap[course.id] && (mentorCreatedMap[course.id].toLowerCase() === mentorName || mentorCreatedMap[course.id] === mentorId))
+    ) {
+      return true;
+    }
+
+    // 2. Check if course matches the mentor's designated course in the database
+    const mentorCourse = (currentUser?.course || '').toLowerCase().trim();
+    if (mentorCourse) {
+      const cTitle = (course.title || '').toLowerCase().trim();
+      if (
+        cTitle === mentorCourse ||
+        mentorCourse.includes(cTitle) ||
+        cTitle.includes(mentorCourse) ||
+        (mentorCourse.includes('artificial intelligence') && cTitle.includes('ai & machine')) ||
+        (mentorCourse.includes('ai & machine') && cTitle.includes('artificial intelligence')) ||
+        (mentorCourse.includes('full stack') && cTitle.includes('full stack')) ||
+        (mentorCourse.includes('cloud') && cTitle.includes('cloud')) ||
+        (mentorCourse.includes('product') && cTitle.includes('product')) ||
+        (mentorCourse.includes('business') && cTitle.includes('business')) ||
+        (mentorCourse.includes('design') && cTitle.includes('design'))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  // Resolve active mentor details and allocated avatar from Supabase or local cache
+  const activeMentorData = dbMentors.find(m => 
+    (currentUser?.id && (String(m.id) === String(currentUser?.id))) || 
+    (m.name && currentUser?.name && m.name.toLowerCase().trim() === currentUser?.name.toLowerCase().trim()) ||
+    (m.email && currentUser?.email && m.email.toLowerCase().trim() === currentUser?.email.toLowerCase().trim())
+  );
+
+  const currentMentorAvatar = activeMentorData?.avatar || 
+    currentUser?.avatar || 
+    'https://api.dicebear.com/7.x/notionists/svg?seed=Aria&backgroundColor=b6e3f4';
+
+  const currentMentorStatus = activeMentorData?.status || currentUser?.status || 'Active';
+
+  const myCourseTitles = myCourses.map(c => c.title.toLowerCase());
+  const myEnrolledStudents = (users || []).filter(u => {
+    if (currentUser?.role === 'ADMIN') return true;
+    if (!u.course) return false;
+    const uCourse = u.course.toLowerCase();
+    return myCourseTitles.some(t => t.includes(uCourse) || uCourse.includes(t));
+  });
 
   const getEnrolledStudents = (courseTitle) => {
     if (!users || !Array.isArray(users)) return [];
@@ -51,8 +193,8 @@ export default function TeacherPanel() {
     });
   };
 
-  const totalEnrolledStudents = users ? users.filter(u => u.status === 'APPROVED').length : 0;
-  const totalTopicPages = courses.reduce((acc, c) => acc + (c.sections ? c.sections.reduce((sAcc, s) => sAcc + (s.items?.length || 0), 0) : 0), 0);
+  const totalEnrolledStudents = myEnrolledStudents.filter(u => u.status === 'APPROVED').length;
+  const totalTopicPages = myCourses.reduce((acc, c) => acc + (c.sections ? c.sections.reduce((sAcc, s) => sAcc + (s.items?.length || 0), 0) : 0), 0);
 
   const getCourseMeta = (course) => {
     const cat = (course.category || '').toLowerCase();
@@ -110,6 +252,47 @@ export default function TeacherPanel() {
   const [showCourseMetaModal, setShowCourseMetaModal] = useState(false);
   const [addTopicModalSecIdx, setAddTopicModalSecIdx] = useState(null);
   const [addBlockModalOpen, setAddBlockModalOpen] = useState(false);
+  const [resolvedVideoUrls, setResolvedVideoUrls] = useState({});
+
+  useEffect(() => {
+    if (!courseForm?.sections) return;
+    const pathsToResolve = new Set();
+    courseForm.sections.forEach(sec => {
+      (sec.items || []).forEach(item => {
+        if (item.videoStoragePath) pathsToResolve.add(item.videoStoragePath);
+        if (item.videoUrl && !item.videoUrl.startsWith('blob:')) {
+          pathsToResolve.add(item.videoUrl);
+          const c = extractStoragePath(item.videoUrl);
+          if (c) pathsToResolve.add(c);
+        }
+        (item.blocks || []).forEach(b => {
+          if (b.videoStoragePath) pathsToResolve.add(b.videoStoragePath);
+          if (b.videoUrl && !b.videoUrl.startsWith('blob:')) {
+            pathsToResolve.add(b.videoUrl);
+            const cb = extractStoragePath(b.videoUrl);
+            if (cb) pathsToResolve.add(cb);
+          }
+        });
+      });
+    });
+
+    pathsToResolve.forEach(async (path) => {
+      if (!path) return;
+      try {
+        const signed = await getProtectedVideoUrl(path, 86400);
+        if (signed) {
+          const clean = extractStoragePath(path);
+          setResolvedVideoUrls(prev => ({
+            ...prev,
+            [path]: signed,
+            ...(clean ? { [clean]: signed } : {})
+          }));
+        }
+      } catch (e) {
+        console.warn('Could not resolve signed video URL:', e);
+      }
+    });
+  }, [courseForm.sections]);
 
   // Form State for Create / Edit Course
   const [courseForm, setCourseForm] = useState({
@@ -336,14 +519,46 @@ export default function TeacherPanel() {
     });
   };
 
-  const handleBlockVideoFileUpload = (secIdx, itemIdx, blockIdx, file) => {
+  const handleBlockVideoFileUpload = async (secIdx, itemIdx, blockIdx, file) => {
     if (!file) return;
     const blobUrl = URL.createObjectURL(file);
     updateBlockInCurrentTopic(secIdx, itemIdx, blockIdx, blk => ({
       ...blk,
       videoFileName: file.name,
-      videoBlobUrl: blobUrl
+      videoBlobUrl: blobUrl,
+      uploading: true
     }));
+
+    try {
+      const sanitized = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `courses/${Date.now()}_${sanitized}`;
+      const { data, error } = await supabase.storage
+        .from('course-videos')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (!error && data?.path) {
+        updateBlockInCurrentTopic(secIdx, itemIdx, blockIdx, blk => ({
+          ...blk,
+          videoFileName: file.name,
+          videoUrl: data.path,
+          videoStoragePath: data.path,
+          videoBlobUrl: '',
+          uploading: false
+        }));
+      } else {
+        console.warn('[TeacherPanel] Video upload note:', error?.message);
+        updateBlockInCurrentTopic(secIdx, itemIdx, blockIdx, blk => ({
+          ...blk,
+          uploading: false
+        }));
+      }
+    } catch (err) {
+      console.warn('[TeacherPanel] Video upload error:', err);
+      updateBlockInCurrentTopic(secIdx, itemIdx, blockIdx, blk => ({
+        ...blk,
+        uploading: false
+      }));
+    }
   };
 
   const addBlockQuizQuestion = (secIdx, itemIdx, blockIdx) => {
@@ -500,7 +715,22 @@ export default function TeacherPanel() {
       return;
     }
 
-    createCourse(courseForm);
+    const courseId = courseForm.id || `course-${Date.now()}`;
+    const coursePayload = {
+      ...courseForm,
+      id: courseId,
+      created_by: currentUser?.name || 'Mentor',
+      mentor_id: currentUser?.id,
+      mentor_name: currentUser?.name
+    };
+
+    try {
+      const map = JSON.parse(localStorage.getItem('careercore_mentor_created_courses') || '{}');
+      map[courseId] = currentUser?.name || currentUser?.id || 'Mentor';
+      localStorage.setItem('careercore_mentor_created_courses', JSON.stringify(map));
+    } catch (e) {}
+
+    createCourse(coursePayload);
     setTeacherCourseMode('list');
     setCourseForm({
       title: '',
@@ -543,6 +773,117 @@ export default function TeacherPanel() {
     setTeacherCourseMode('create');
   };
 
+  // If still loading mentors from DB
+  if (loadingMentors) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
+        <div className="w-9 h-9 border-3 border-teal-200 border-t-[#0D9488] rounded-full animate-spin"></div>
+        <p className="font-mono text-xs font-bold text-slate-500 uppercase tracking-wider">Verifying Mentor Authorization...</p>
+      </div>
+    );
+  }
+
+  // If not authorized as a verified mentor in the database, show the Mentor Access Gate
+  if (!isAuthorizedMentor) {
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-between font-sans text-[#0A317B]">
+        {/* Top bar */}
+        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setActiveView('landing')} className="flex items-center gap-2 cursor-pointer">
+              <img src="/logo.png" alt="CareerCore Logo" className="h-8 w-auto" />
+            </button>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-50 border border-teal-200 text-[#0D9488] text-[11px] font-extrabold uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>MENTOR SECURITY GATE</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setActiveView('landing')}
+            className="text-xs font-bold text-gray-500 hover:text-[#0A317B] flex items-center gap-1.5 cursor-pointer transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Site</span>
+          </button>
+        </header>
+
+        {/* Center Login Gate */}
+        <div className="max-w-md w-full mx-auto px-4 py-12">
+          <div className="bg-white rounded-3xl p-8 border border-gray-200 shadow-xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-[#E6F8F6] text-[#0D9488] flex items-center justify-center border border-[#BDEEE9] shadow-xs">
+                <GraduationCap className="w-7 h-7" />
+              </div>
+              <h2 className="text-2xl font-black text-[#0A317B]">Mentor Studio</h2>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-[#FA9C16] text-[11px] font-bold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Restricted · Database Mentors Only</span>
+              </div>
+              <p className="text-xs text-gray-500 pt-1">
+                Only verified mentors present in the database roster are authorized to access this workspace.
+              </p>
+            </div>
+
+            {mentorLoginError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                {mentorLoginError}
+              </div>
+            )}
+
+            <form onSubmit={handleMentorAuth} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1.5">
+                  Mentor Name or Email
+                </label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={mentorInput}
+                    onChange={(e) => { setMentorInput(e.target.value); setMentorLoginError(''); }}
+                    placeholder="Enter mentor name or email"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20 text-sm font-semibold outline-none transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 block mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    value={mentorPassword}
+                    onChange={(e) => { setMentorPassword(e.target.value); setMentorLoginError(''); }}
+                    placeholder="••••••••••••"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-[#0D9488] focus:ring-2 focus:ring-[#0D9488]/20 text-sm font-semibold outline-none transition-all"
+                    required
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={verifying}
+                className="w-full py-3.5 rounded-xl bg-[#0D9488] hover:bg-[#0f766e] text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                {verifying ? 'Authenticating with Database...' : 'Authenticate & Enter Mentor Portal'}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <footer className="py-4 text-center text-xs text-gray-400">
+          CareerCore Edutech · Secure Mentor Workspace
+        </footer>
+      </div>
+    );
+  }
+
   // Dedicated Course Builder Page View
   if (teacherCourseMode === 'create') {
     const safeSecIdx = Math.min(activeSecIdx, Math.max(0, courseForm.sections.length - 1));
@@ -566,7 +907,7 @@ export default function TeacherPanel() {
             </button>
             <div>
               <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A317B] tracking-tight">
-                Teacher Course Builder
+                Mentor Course Builder
               </h1>
               <p className="text-xs text-gray-500">
                 Add Drag & Drop Video Files, Notion Articles, or Custom MCQ Quizzes.
@@ -575,6 +916,27 @@ export default function TeacherPanel() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Mentor Identity Chip */}
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="relative shrink-0">
+                <img
+                  src={currentMentorAvatar}
+                  alt={currentUser?.name || 'Mentor'}
+                  className="w-7 h-7 rounded-lg object-cover border border-slate-200"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://api.dicebear.com/7.x/notionists/svg?seed=Aria&backgroundColor=b6e3f4';
+                  }}
+                />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ring-1 ring-white ${
+                    currentMentorStatus === 'Active' ? 'bg-emerald-500' : 'bg-amber-400'
+                  }`}
+                />
+              </div>
+              <span className="font-extrabold text-xs text-[#0F172A]">{currentUser?.name || 'Mentor'}</span>
+            </div>
+
             <button
               type="button"
               onClick={() => setShowCourseMetaModal(true)}
@@ -855,11 +1217,34 @@ export default function TeacherPanel() {
                             </div>
                           )}
                         </div>
-                        {block.videoBlobUrl && (
-                          <div className="p-3 bg-slate-900 rounded-2xl overflow-hidden shadow-md">
-                            <video controls src={block.videoBlobUrl} className="w-full max-h-64 rounded-xl" />
-                          </div>
-                        )}
+                        {(() => {
+                          const activeSrc = 
+                            (block.videoBlobUrl && block.videoBlobUrl.startsWith('blob:') ? block.videoBlobUrl : null) ||
+                            resolvedVideoUrls[block.videoStoragePath] ||
+                            resolvedVideoUrls[block.videoUrl] ||
+                            resolvedVideoUrls[extractStoragePath(block.videoStoragePath)] ||
+                            resolvedVideoUrls[extractStoragePath(block.videoUrl)] ||
+                            resolvedVideoUrls[currentActiveItem?.videoStoragePath] ||
+                            resolvedVideoUrls[currentActiveItem?.videoUrl] ||
+                            (block.videoBlobUrl && block.videoBlobUrl.startsWith('http') && !block.videoBlobUrl.includes('/course-videos/') ? block.videoBlobUrl : null) ||
+                            (block.videoUrl && block.videoUrl.startsWith('http') && !block.videoUrl.includes('/course-videos/') ? block.videoUrl : null);
+
+                          if (!activeSrc) return null;
+                          return (
+                            <div className="p-3 bg-slate-900 rounded-2xl overflow-hidden shadow-md space-y-2">
+                              <div className="flex items-center justify-between text-[11px] font-bold text-slate-300 px-1">
+                                <span className="flex items-center gap-1.5 text-emerald-400 font-extrabold">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                  Live Video Stream (Ready)
+                                </span>
+                                <span className="font-mono text-[10px] text-slate-400">
+                                  {block.videoFileName || currentActiveItem?.videoFileName || 'video.mp4'}
+                                </span>
+                              </div>
+                              <video controls playsInline src={activeSrc} className="w-full max-h-64 rounded-xl bg-black" />
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -1264,19 +1649,48 @@ export default function TeacherPanel() {
             </button>
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E6F8F6] border border-[#BDEEE9] text-[#0D9488] font-extrabold text-[11px] uppercase tracking-wider">
               <GraduationCap className="w-3.5 h-3.5 text-[#0D9488]" />
-              <span>TEACHER PORTAL</span>
+              <span>MENTOR PORTAL</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-extrabold text-[#0F172A]">{currentUser?.name || 'Instructor Alex'}</p>
-              <p className="text-[10px] text-slate-400 font-medium">Certified Course Creator</p>
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Mentor Profile with Allocated/Created Avatar (Circled by user) */}
+            <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-50/90 hover:bg-slate-100/90 border border-slate-200/80 px-2.5 py-1.5 rounded-2xl transition-all shadow-2xs">
+              <div className="relative shrink-0">
+                <img
+                  src={currentMentorAvatar}
+                  alt={currentUser?.name || 'Mentor'}
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover border border-slate-200/90 shadow-2xs bg-white"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = 'https://api.dicebear.com/7.x/notionists/svg?seed=Aria&backgroundColor=b6e3f4';
+                  }}
+                />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white ${
+                    currentMentorStatus === 'Active' ? 'bg-emerald-500' : 'bg-amber-400'
+                  }`}
+                  title={currentMentorStatus}
+                />
+              </div>
+
+              <div className="text-left hidden sm:block pr-1">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-extrabold text-[#0F172A] leading-tight">
+                    {currentUser?.name || activeMentorData?.name || 'Verified Mentor'}
+                  </p>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                </div>
+                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                  <span className="font-semibold text-slate-500">{currentUser?.role || 'MENTOR'}</span>
+                  {(currentUser?.company || activeMentorData?.company) ? ` · ${currentUser?.company || activeMentorData?.company}` : ''}
+                </p>
+              </div>
             </div>
 
             <button
               onClick={() => setActiveView('landing')}
-              className="px-4 py-2 rounded-xl bg-[#EEF2F6] hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#EEF2F6] hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
             >
               Return to Site
             </button>
@@ -1305,10 +1719,10 @@ export default function TeacherPanel() {
           <div className="space-y-2.5 max-w-xl relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white font-semibold text-xs border border-white/20">
               <GraduationCap className="w-4 h-4 text-white" />
-              <span>Instructor Workspace & Course Management</span>
+              <span>Mentor Workspace & Course Studio</span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold tracking-tight leading-tight">
-              Welcome back, <span className="text-[#38BDF8]">Instructor Alex!</span>
+              Welcome back, <span className="text-[#38BDF8]">{currentUser?.name || 'Mentor'}!</span>
             </h1>
             <p className="text-xs sm:text-sm text-white/85 font-medium leading-relaxed">
               Create and publish custom courses, build multi-block lesson pages, and track student enrollments and course performance in real time.
@@ -1403,9 +1817,9 @@ export default function TeacherPanel() {
               </div>
               <div>
                 <div className="text-3xl font-extrabold text-[#0F172A] leading-tight">
-                  {courses.length}
+                  {myCourses.length}
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">Total Active Courses Managed</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">Courses Created & Managed</p>
               </div>
             </div>
             <div className="text-xs font-bold text-[#2563EB] flex items-center gap-0.5 hover:underline self-start mt-1">
@@ -1425,9 +1839,9 @@ export default function TeacherPanel() {
               </div>
               <div>
                 <div className="text-3xl font-extrabold text-[#0F172A] leading-tight">
-                  {totalEnrolledStudents}
+                  {myEnrolledStudents.length}
                 </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">Total Students Taking Courses</p>
+                <p className="text-xs text-slate-500 font-medium mt-1">Students in Your Courses</p>
               </div>
             </div>
             <div className="text-xs font-bold text-[#0D9488] flex items-center gap-0.5 hover:underline self-start mt-1">
@@ -1469,7 +1883,7 @@ export default function TeacherPanel() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold'
             }`}
           >
-            My Courses & Full Builder ({courses.length})
+            My Courses & Full Builder ({myCourses.length})
           </button>
 
           <button
@@ -1480,99 +1894,139 @@ export default function TeacherPanel() {
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold'
             }`}
           >
-            Student Enrollment Analytics ({users.length})
+            Student Enrollment Analytics ({myEnrolledStudents.length})
           </button>
         </div>
 
         {/* TAB 1: COURSES MANAGEMENT & BUILDER */}
         {teacherTab === 'courses' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {courses.map((course) => {
-              const enrolled = getEnrolledStudents(course.title);
-              const topicsCount = course.sections ? course.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : 1;
-              const meta = getCourseMeta(course);
-
-              return (
-                <div 
-                  key={course.id} 
-                  className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-5 group"
-                >
-                  <div className="space-y-4">
-                    {/* Top Row: Category badge + Duration */}
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2.5 py-1 rounded-full ${meta.categoryBadgeClass} font-extrabold text-[10px] uppercase tracking-wider`}>
-                        {meta.categoryLabel}
-                      </span>
-                      <span className="text-xs font-semibold text-slate-400">
-                        {course.duration || meta.defaultDuration}
-                      </span>
-                    </div>
-
-                    {/* Middle: Icon + Title & Description */}
-                    <div className="flex items-start gap-3.5">
-                      <div className={`w-12 h-12 rounded-2xl ${meta.iconBgClass} text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5`}>
-                        {meta.iconType === 'code' && (
-                          <span className="font-mono font-black text-sm">&lt;/&gt;</span>
-                        )}
-                        {meta.iconType === 'ai' && (
-                          <Cpu className="w-6 h-6" />
-                        )}
-                        {meta.iconType === 'cloud' && (
-                          <Cloud className="w-6 h-6" />
-                        )}
-                        {meta.iconType === 'business' && (
-                          <BarChart3 className="w-6 h-6" />
-                        )}
-                        {meta.iconType === 'design' && (
-                          <Sparkles className="w-6 h-6" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-extrabold text-[#0F172A] leading-snug group-hover:text-[#0B48AD] transition-colors">
-                          {course.title}
-                        </h3>
-                        <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-1">
-                          {course.description || 'A comprehensive, industry-aligned curriculum designed with senior mentors and real-world projects.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Bottom row: Enrolled pill + Topics pill */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <div className="p-2 px-3 rounded-xl bg-[#E6F8F5] text-[#0D9488] flex items-center justify-center gap-1.5 text-xs font-bold">
-                        <User className="w-3.5 h-3.5" />
-                        <span>{enrolled.length > 0 ? enrolled.length : (course.id === 'c1' || course.id === 'c3' ? 1 : 0)} Students Enrolled</span>
-                      </div>
-                      <div className="p-2 px-3 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center gap-1.5 text-xs font-bold">
-                        <BookOpen className="w-3.5 h-3.5" />
-                        <span>{topicsCount} Topics</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions footer (Quick open builder / Edit / Delete) */}
-                  <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
-                    <button
-                      onClick={() => openCourseForEdit(course)}
-                      className="flex-1 py-2.5 rounded-xl bg-[#0B48AD] hover:bg-[#093e96] text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
-                    >
-                      <FileCode className="w-3.5 h-3.5" /> Open Course Builder
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Delete "${course.title}"?`)) deleteCourse(course.id);
-                      }}
-                      className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                      title="Delete Course"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+            {myCourses.length === 0 ? (
+              <div className="col-span-full py-16 px-6 text-center bg-white rounded-3xl border border-dashed border-slate-300 shadow-xs">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-[#0B48AD] flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                  <BookOpen className="w-8 h-8" />
                 </div>
-              );
-            })}
+                <h3 className="text-lg font-extrabold text-[#0F172A] mb-1">No Courses Created Yet</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+                  You currently have no courses assigned or created. Use the Course Builder to design and publish your curriculum.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCourseForm({
+                      title: '',
+                      category: 'Engineering',
+                      duration: '10 Weeks',
+                      price: '₹30,000',
+                      description: '',
+                      sections: [
+                        {
+                          weekNumber: 1,
+                          title: 'Week 1: Introduction and Fundamentals',
+                          items: [
+                            { title: 'Day 1: Course Overview & Setup', contentType: 'video', articles: 1, mcqs: 0, status: 'Start' }
+                          ]
+                        }
+                      ]
+                    });
+                    setActiveSecIdx(0);
+                    setActiveItemIdx(0);
+                    setTeacherCourseMode('create');
+                  }}
+                  className="px-6 py-3 rounded-xl bg-[#0B48AD] hover:bg-[#093e96] text-white font-extrabold text-xs shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create Your First Course</span>
+                </button>
+              </div>
+            ) : (
+              myCourses.map((course) => {
+                const enrolled = getEnrolledStudents(course.title);
+                const topicsCount = course.sections ? course.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : 1;
+                const meta = getCourseMeta(course);
+
+                return (
+                  <div 
+                    key={course.id} 
+                    className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-5 group"
+                  >
+                    <div className="space-y-4">
+                      {/* Top Row: Category badge + Duration */}
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2.5 py-1 rounded-full ${meta.categoryBadgeClass} font-extrabold text-[10px] uppercase tracking-wider`}>
+                          {meta.categoryLabel}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-400">
+                          {course.duration || meta.defaultDuration}
+                        </span>
+                      </div>
+
+                      {/* Middle: Icon + Title & Description */}
+                      <div className="flex items-start gap-3.5">
+                        <div className={`w-12 h-12 rounded-2xl ${meta.iconBgClass} text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5`}>
+                          {meta.iconType === 'code' && (
+                            <span className="font-mono font-black text-sm">&lt;/&gt;</span>
+                          )}
+                          {meta.iconType === 'ai' && (
+                            <Cpu className="w-6 h-6" />
+                          )}
+                          {meta.iconType === 'cloud' && (
+                            <Cloud className="w-6 h-6" />
+                          )}
+                          {meta.iconType === 'business' && (
+                            <BarChart3 className="w-6 h-6" />
+                          )}
+                          {meta.iconType === 'design' && (
+                            <Sparkles className="w-6 h-6" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-base font-extrabold text-[#0F172A] leading-snug group-hover:text-[#0B48AD] transition-colors">
+                            {course.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-1">
+                            {course.description || 'A comprehensive, industry-aligned curriculum designed with senior mentors and real-world projects.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Bottom row: Enrolled pill + Topics pill */}
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div className="p-2 px-3 rounded-xl bg-[#E6F8F5] text-[#0D9488] flex items-center justify-center gap-1.5 text-xs font-bold">
+                          <User className="w-3.5 h-3.5" />
+                          <span>{enrolled.length > 0 ? enrolled.length : 0} Students Enrolled</span>
+                        </div>
+                        <div className="p-2 px-3 rounded-xl bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center gap-1.5 text-xs font-bold">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>{topicsCount} Topics</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions footer (Quick open builder / Edit / Delete) */}
+                    <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      <button
+                        onClick={() => openCourseForEdit(course)}
+                        className="flex-1 py-2.5 rounded-xl bg-[#0B48AD] hover:bg-[#093e96] text-white font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs"
+                      >
+                        <FileCode className="w-3.5 h-3.5" /> Open Course Builder
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete "${course.title}"?`)) deleteCourse(course.id);
+                        }}
+                        className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Delete Course"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
 
@@ -1600,8 +2054,8 @@ export default function TeacherPanel() {
                   onChange={e => setSelectedCourseFilter(e.target.value)}
                   className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-[#0F172A] bg-white cursor-pointer w-full sm:w-auto"
                 >
-                  <option value="ALL">All Courses</option>
-                  {courses.map(c => (
+                  <option value="ALL">All My Courses</option>
+                  {myCourses.map(c => (
                     <option key={c.id} value={c.title}>{c.title}</option>
                   ))}
                 </select>
@@ -1612,10 +2066,10 @@ export default function TeacherPanel() {
             <div className="bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm">
               <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="text-sm font-extrabold text-[#0F172A]">
-                  Enrolled Students List ({
-                    users.filter(u => {
+                  Enrolled Students in Your Courses ({
+                    myEnrolledStudents.filter(u => {
                       const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
-                      const matchesCourse = selectedCourseFilter === 'ALL' || u.course === selectedCourseFilter;
+                      const matchesCourse = selectedCourseFilter === 'ALL' || (u.course && (u.course.toLowerCase().includes(selectedCourseFilter.toLowerCase()) || selectedCourseFilter.toLowerCase().includes(u.course.toLowerCase())));
                       return matchesSearch && matchesCourse;
                     }).length
                   })
@@ -1634,9 +2088,9 @@ export default function TeacherPanel() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {users.filter(u => {
+                    {myEnrolledStudents.filter(u => {
                       const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
-                      const matchesCourse = selectedCourseFilter === 'ALL' || u.course === selectedCourseFilter;
+                      const matchesCourse = selectedCourseFilter === 'ALL' || (u.course && (u.course.toLowerCase().includes(selectedCourseFilter.toLowerCase()) || selectedCourseFilter.toLowerCase().includes(u.course.toLowerCase())));
                       return matchesSearch && matchesCourse;
                     }).map((user) => (
                       <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">

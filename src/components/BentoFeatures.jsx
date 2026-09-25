@@ -99,7 +99,7 @@ export default function BentoFeatures() {
     }
   };
 
-  // Data for Card 4 (Placement Pipeline)
+  // Data for Card 4 (Career Pipeline)
   const pipelineSteps = [
     { label: 'GitHub Sync', sub: '142 Commits Synced', color: '#0A317B' },
     { label: 'ATS Resume Score', sub: '99/100 Optimized', color: '#1A9C9B' },
@@ -145,7 +145,7 @@ export default function BentoFeatures() {
             </span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-gray-600">
-            Click & interact with our live AI learning engine, specialization tracks, credentials, and placement compiler.
+            Click & interact with our live AI learning engine, specialization tracks, credentials, and career portfolio compiler.
           </p>
         </div>
 
@@ -437,7 +437,7 @@ export default function BentoFeatures() {
           </motion.div>
 
           {/* ========================================================================= */}
-          {/* BENTO CARD 4: Automated Placement Compiler */}
+          {/* BENTO CARD 4: Automated Career Compiler */}
           {/* ========================================================================= */}
           <motion.div 
             whileHover={{ y: -4 }}
@@ -454,10 +454,10 @@ export default function BentoFeatures() {
               </div>
 
               <span className="text-xs font-mono text-[#1A9C9B] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" /> PLACEMENT PIPELINE
+                <TrendingUp className="w-3.5 h-3.5" /> CAREER PIPELINE
               </span>
               <h3 className="text-2xl font-bold text-[#0A317B] mt-1">
-                Automated Placement Compiler
+                Automated Career Compiler
               </h3>
               <p className="text-sm text-gray-600 mt-2 leading-relaxed">
                 Compile your capstone projects, GitHub commits, and assessment scores into an ATS-friendly candidate profile delivered to 500+ recruiters.
@@ -490,7 +490,7 @@ export default function BentoFeatures() {
               <div className="p-4 rounded-2xl bg-[#0A317B] text-white font-mono text-xs space-y-2 border border-[#0A317B]/40 shadow-inner">
                 <div className="flex items-center justify-between border-b border-blue-950 pb-2 text-[11px]">
                   <span className="text-[#1A9C9B] font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-[#FA9C16]" /> Live Placement Stream
+                    <Sparkles className="w-3.5 h-3.5 text-[#FA9C16]" /> Live Career Stream
                   </span>
                   <span className="px-2 py-0.5 rounded bg-[#FA9C16] text-white font-extrabold text-[10px]">
                     5 Active Calls

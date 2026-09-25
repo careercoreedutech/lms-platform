@@ -41,8 +41,8 @@ export default function PricingSection() {
       ]
     },
     {
-      name: 'Placement BootCamp',
-      desc: 'Guaranteed job placement support, income share agreement option, and direct hiring manager referrals.',
+      name: 'Career Acceleration BootCamp',
+      desc: 'Comprehensive career acceleration support, flexible ISA options, and direct hiring manager referrals.',
       priceMonthly: 'ISA / Custom',
       priceAnnual: 'ISA / Custom',
       badge: 'Guaranteed Career',
@@ -51,9 +51,9 @@ export default function PricingSection() {
       features: [
         'Everything in CareerCore Pro',
         'Guaranteed interview calls SLA',
-        'Dedicated Career Coach & Placement Officer',
+        'Dedicated Career Coach & Interview Mentor',
         'Custom corporate hiring challenges',
-        'Pay after placement (ISA options)',
+        'Flexible payment options (ISA models)',
         'Lifetime alumni career support network'
       ]
     }
@@ -72,7 +72,7 @@ export default function PricingSection() {
             Transparent investment for <span className="text-[#FA9C16]">your future</span>
           </h2>
           <p className="mt-4 text-base sm:text-lg text-gray-600">
-            Choose a program that fits your goals. Start free, or join our job-guaranteed placement bootcamp.
+            Choose a program that fits your goals. Start free, or join our career acceleration bootcamp.
           </p>
 
           <div className="mt-8 flex items-center justify-center gap-3">

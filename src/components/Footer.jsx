@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Instagram, Facebook, Twitter, Linkedin, Heart, ArrowUp, Send, CheckCircle2 } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Linkedin, Heart, ArrowUp, Send, CheckCircle2, Phone } from 'lucide-react';
 
 export default function Footer() {
   const [email, setEmail] = useState('');
@@ -25,7 +25,7 @@ export default function Footer() {
     },
     {
       title: 'Resources',
-      links: ['Placement Reports', 'Student Projects Hub', 'Free Coding Workshops', 'Interview Cheat Sheets', 'Syllabus Download', 'Alumni Network']
+      links: ['Career Reports', 'Student Projects Hub', 'Free Coding Workshops', 'Interview Cheat Sheets', 'Syllabus Download', 'Alumni Network']
     },
     {
       title: 'Company',
@@ -33,7 +33,7 @@ export default function Footer() {
     },
     {
       title: 'Legal & Policy',
-      links: ['Privacy Policy', 'Terms & Conditions', 'Tuition Refund Policy', 'ISA Terms', 'Placement Guarantee SLA']
+      links: ['Privacy Policy', 'Terms & Conditions', 'Tuition Refund Policy', 'ISA Terms', 'Career Support SLA']
     }
   ];
 
@@ -94,6 +94,16 @@ export default function Footer() {
             <p className="text-gray-500 text-xs max-w-sm leading-relaxed">
               CareerCore Edutech empowers students and working professionals to master industry-ready tech skills, build production projects, and achieve career breakthroughs.
             </p>
+
+            <div className="pt-1 flex items-center gap-2 text-xs font-bold text-[#0A317B]">
+              <a 
+                href="tel:+918341876728"
+                className="flex items-center gap-2 hover:text-[#1A9C9B] transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5 text-[#FA9C16]" />
+                <span>+91 83418 76728</span>
+              </a>
+            </div>
 
             <div className="flex items-center gap-3 pt-2">
               <a

@@ -4,10 +4,10 @@ import { Heart, ArrowRight, GraduationCap, Star, Quote, ShieldCheck, Sparkles, B
 
 export default function CommunitySection() {
   const stats = [
-    { label: 'Learners Placed', val: '50,000+', color: 'text-[#FA9C16]' },
+    { label: 'Successful Graduates', val: '50,000+', color: 'text-[#FA9C16]' },
     { label: 'Average Salary Hike', val: '140%', color: 'text-[#1A9C9B]' },
     { label: 'Hiring Partners', val: '500+ Top Tech', color: 'text-[#0A317B]' },
-    { label: 'Placement Rate', val: '98.4%', color: 'text-[#1A9C9B]' }
+    { label: 'Success Rate', val: '98.4%', color: 'text-[#1A9C9B]' }
   ];
 
   const posts = [
@@ -35,11 +35,11 @@ export default function CommunitySection() {
     },
     {
       title: 'How 1-on-1 Mentorship & Mock Interviews Helped Me Land a Job',
-      desc: 'Inside the placement boot-camp experience: resume ATS tuning, system design whiteboarding, and direct hiring partner referrals.',
+      desc: 'Inside the career boot-camp experience: resume ATS tuning, system design whiteboarding, and direct hiring partner referrals.',
       author: 'Ankit Verma',
       role: 'DevOps Architect @ Microsoft',
       salary: '₹22 LPA Package',
-      tag: 'Placement Bootcamp',
+      tag: 'Career Bootcamp',
       color: 'text-[#0A317B]',
       border: 'border-[#0A317B]/30',
       initials: 'AV'

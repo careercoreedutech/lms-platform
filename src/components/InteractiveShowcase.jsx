@@ -37,8 +37,8 @@ export default function InteractiveShowcase() {
     },
     {
       id: 'cross',
-      shortTitle: 'CAREER PLACEMENT & INTERVIEW PREP',
-      title: 'CAREER PLACEMENT & INTERVIEW PREP',
+      shortTitle: 'CAREER & INTERVIEW ACCELERATION',
+      title: 'CAREER & INTERVIEW ACCELERATION',
       desc: 'Get 1-on-1 mock interviews, resume optimization, salary negotiation coaching, and direct referrals to hiring partners.',
       tree: ['dsa_problem_solving', 'system_design_mock', 'resume_ats_optimizer', 'recruiter_referrals']
     }
@@ -180,7 +180,7 @@ export default function InteractiveShowcase() {
 
                   <div className="flex flex-col items-center p-2 rounded-xl text-gray-500 hover:bg-gray-50 cursor-pointer">
                     <Upload className="w-5 h-5 mb-1 text-gray-400" />
-                    <span className="text-[10px]">Placements</span>
+                    <span className="text-[10px]">Careers</span>
                   </div>
 
                 </div>

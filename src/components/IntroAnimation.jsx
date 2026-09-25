@@ -50,14 +50,23 @@ export default function IntroAnimation({ onReveal, onComplete, siteReady }) {
       }
     }
 
-    // Animation is fully finished at ~3.4s. Only now let the (heavy) site mount
-    // behind the still-opaque intro, so its work can't freeze the animation.
-    const revealTimer = setTimeout(() => onRevealRef.current?.(), 3500);
+    // Instant skip on click or keyboard press so user is never blocked
+    const handleSkip = () => {
+      onRevealRef.current?.();
+      onCompleteRef.current?.();
+    };
+    window.addEventListener('click', handleSkip, { once: true });
+    window.addEventListener('keydown', handleSkip, { once: true });
 
-    // Safety net: never let the intro hang, whatever happens
-    const failsafe = setTimeout(() => onCompleteRef.current?.(), 7000);
+    // Snappy auto-reveal at ~1.6s
+    const revealTimer = setTimeout(() => onRevealRef.current?.(), 1600);
+
+    // Safety net: never let the intro hang
+    const failsafe = setTimeout(() => onCompleteRef.current?.(), 2500);
 
     return () => {
+      window.removeEventListener('click', handleSkip);
+      window.removeEventListener('keydown', handleSkip);
       clearTimeout(revealTimer);
       clearTimeout(failsafe);
     };

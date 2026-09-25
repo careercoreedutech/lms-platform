@@ -7,16 +7,19 @@ import {
   Sun, 
   Moon, 
   X, 
-  Sparkles,
-  ArrowRight,
-  GraduationCap,
-  Award,
-  BookOpen,
-  Briefcase
+  Sparkles, 
+  ArrowRight, 
+  GraduationCap, 
+  Award, 
+  BookOpen, 
+  Briefcase,
+  Star
 } from 'lucide-react';
 import BottomFlowBar from './BottomFlowBar';
+import { useLms } from '../context/LmsContext';
 
 export default function HeroSection() {
+  const { openEnrollment, setAuthModal } = useLms();
   const [selectedFormat, setSelectedFormat] = useState('Live'); // 'Live' | 'Self-Paced' | 'Mentor' | 'Projects'
   const [skillCount, setSkillCount] = useState(25);
   const [courseIndex, setCourseIndex] = useState(0);
@@ -24,7 +27,7 @@ export default function HeroSection() {
   const [darkModeActive, setDarkModeActive] = useState(false);
   const [selectedCertMode, setSelectedCertMode] = useState('Honors'); // 'Standard' | 'Honors'
   const [chatOpen, setChatOpen] = useState(true);
-  const [curveHeight, setCurveHeight] = useState(12);
+  const [curveHeight, setCurveHeight] = useState(14);
 
   const courses = [
     { name: 'Full Stack Web Dev', primary: '#0A317B', secondary: '#1A9C9B', category: 'Software' },
@@ -53,13 +56,27 @@ export default function HeroSection() {
         
         {/* Top Headline Banner */}
         <div className="text-center max-w-4xl mx-auto mb-10">
+          
+          {/* Top Pill Micro-Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-200/90 text-slate-700 text-xs font-bold mb-5 shadow-2xs"
+          >
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[#0A317B] font-extrabold">CareerCore 2.0</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600">Next-Gen Tech Cohorts Open</span>
+            <Sparkles className="w-3.5 h-3.5 text-[#FA9C16]" />
+          </motion.div>
 
-
+          {/* Main H1 Title */}
           <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-none text-[#0A317B]"
+            className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] text-[#0A317B]"
           >
             Empowering your career, <br />
             <span className="bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] bg-clip-text text-transparent">
@@ -67,52 +84,80 @@ export default function HeroSection() {
             </span>
           </motion.h1>
 
-          {/* Lottie People Animation Flow Row (Between Title and Description) */}
-          <div className="my-4">
-            <BottomFlowBar />
-          </div>
-
+          {/* Subtitle directly beneath title */}
           <motion.p
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mt-2 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto font-medium"
+            className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed"
           >
-            CareerCore Edutech is the premier learning ecosystem for students and professionals. Master in-demand industry skills, build real-world projects, and land top tech & business careers.
+            CareerCore Edutech is the premier learning ecosystem for ambitious students and professionals. Master in-demand industry skills, build real-world capstone projects, and land high-growth tech & business careers.
           </motion.p>
+
+          {/* Dual Action Hero CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-3.5"
+          >
+            <button
+              onClick={() => openEnrollment ? openEnrollment() : setAuthModal('enroll')}
+              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#FA9C16] to-[#f58d00] hover:from-[#f58d00] hover:to-[#cb7702] text-white font-extrabold text-sm shadow-lg hover:shadow-orange-500/25 transition-all active:scale-95 flex items-center gap-2 cursor-pointer group"
+            >
+              <span>Explore Programs & Enroll</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </button>
+
+            <a
+              href="#features"
+              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-[#0A317B] font-bold text-sm border border-slate-200/90 hover:border-slate-300 shadow-xs hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4 text-[#1A9C9B]" />
+              <span>Browse Curriculum</span>
+            </a>
+          </motion.div>
+
+          {/* Lottie People Animation Flow Row with Title */}
+          <div className="mt-8 pt-5 border-t border-slate-100/80">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+              Continuous Skill & Career Progression Track
+            </p>
+            <BottomFlowBar />
+          </div>
         </div>
 
         {/* ========================================================================= */}
         {/* MAIN 3D FLOATING TOKEN COMPOSITION CONTAINER */}
         {/* ========================================================================= */}
-        <div className="relative w-full max-w-6xl mx-auto pt-6 pb-12 min-h-[660px] flex items-center justify-center">
+        <div className="relative w-full max-w-6xl mx-auto pt-4 pb-12 min-h-[660px] flex items-center justify-center">
 
-          {/* FLOATING 3D WIDGET 1: Top-Left Orange Curve Card */}
+          {/* FLOATING 3D WIDGET 1: Top-Left Orange Curve Card (Upward Growth Curve) */}
           <motion.div
             animate={{ y: [0, -8, 0], rotate: [-6, -4, -6] }}
             transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
             whileHover={{ scale: 1.08, rotate: -2, zIndex: 40 }}
             className="absolute top-2 left-2 sm:left-6 z-20 w-44 sm:w-56 h-32 sm:h-40 bg-[#FA9C16] rounded-3xl p-3 shadow-3d-orange border-2 border-white/60 cursor-pointer flex flex-col justify-between"
-            onClick={() => setCurveHeight(curveHeight === 12 ? 35 : 12)}
+            onClick={() => setCurveHeight(curveHeight === 14 ? 26 : 14)}
           >
             <div className="w-full h-full bg-[#FA9C16] rounded-2xl border border-white/30 p-2 relative overflow-hidden flex items-center justify-center">
               <div className="absolute top-1 left-2 text-[9px] font-mono font-bold text-white/90">
-                Learning Growth Curve
+                Learning Growth Curve 📈
               </div>
 
               <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] bg-[size:16px_16px]" />
               
               <svg className="w-full h-full relative z-10 overflow-visible" viewBox="0 0 100 60">
                 <path
-                  d={`M 10 50 Q 50 ${curveHeight} 90 50`}
+                  d={`M 10 48 Q 50 42 90 ${curveHeight}`}
                   fill="none"
                   stroke="white"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                 />
-                <circle cx="10" cy="50" r="4.5" fill="white" stroke="#FA9C16" strokeWidth="2" />
-                <circle cx="50" cy={curveHeight} r="5" fill="white" stroke="#FA9C16" strokeWidth="2.5" />
-                <circle cx="90" cy="50" r="4.5" fill="white" stroke="#FA9C16" strokeWidth="2" />
+                <circle cx="10" cy="48" r="4.5" fill="white" stroke="#FA9C16" strokeWidth="2" />
+                <circle cx="50" cy="42" r="4" fill="white" stroke="#FA9C16" strokeWidth="2" />
+                <circle cx="90" cy={curveHeight} r="5" fill="white" stroke="#FA9C16" strokeWidth="2.5" />
               </svg>
             </div>
           </motion.div>
@@ -242,7 +287,7 @@ export default function HeroSection() {
     "Node.js",
     "System Design"
   ],
-  "placement": {
+  "career": {
     "mockInterviews": 5,
     "certified": true
   }
@@ -439,7 +484,7 @@ export default function HeroSection() {
                 { bg: 'text-white', primaryColor: currentCourse.primary, title: 'Real-World Projects', desc: 'Build production-ready apps' },
                 { bg: 'bg-[#1A9C9B]/10 text-[#0A317B]', primaryColor: '#1A9C9B', title: '1-on-1 Mentorship', desc: 'Guidance from top engineers' },
                 { bg: 'bg-[#FA9C16]/15 text-[#0A317B]', primaryColor: '#FA9C16', title: 'Resume Compiler', desc: 'ATS-optimized portfolio' },
-                { bg: 'bg-blue-50 text-[#0A317B]', primaryColor: '#0A317B', title: 'Placement Support', desc: 'Guaranteed interview calls' },
+                { bg: 'bg-blue-50 text-[#0A317B]', primaryColor: '#0A317B', title: 'Career Guidance', desc: '1-on-1 interview prep' },
               ].map((card, i) => (
                 <motion.div 
                   key={i} 

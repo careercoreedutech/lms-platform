@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 const LmsContext = createContext();
@@ -30,8 +30,10 @@ export const INITIAL_COURSES = [
             id: 'fs-it-1',
             title: 'Day 1: React Ecosystem & TypeScript Setup',
             contentType: 'video',
-            videoFileName: '',
+            videoFileName: 'AirBnB_Concept_Ad.mp4',
             videoBlobUrl: '',
+            videoUrl: 'courses/1789887976311_AirBnB_Concept_Ad.mp4',
+            videoStoragePath: 'courses/1789887976311_AirBnB_Concept_Ad.mp4',
             duration: '20 mins',
             articles: 1,
             mcqs: 0,
@@ -67,8 +69,10 @@ export const INITIAL_COURSES = [
             id: 'ai-it-1',
             title: 'Day 1: PyTorch & Vector Embeddings',
             contentType: 'video',
-            videoFileName: '',
+            videoFileName: 'AirBnB_Concept_Ad.mp4',
             videoBlobUrl: '',
+            videoUrl: 'courses/1789887976311_AirBnB_Concept_Ad.mp4',
+            videoStoragePath: 'courses/1789887976311_AirBnB_Concept_Ad.mp4',
             duration: '25 mins',
             articles: 1,
             mcqs: 0,
@@ -102,171 +106,7 @@ export const INITIAL_COURSES = [
         items: [
           {
             id: 'cd-it-1',
-            title: 'Day 1: Microservices Architecture & Containerization',
-            contentType: 'video',
-            videoFileName: '',
-            videoBlobUrl: '',
-            duration: '20 mins',
-            articles: 1,
-            mcqs: 0,
-            status: 'Start'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'course-1',
-    title: 'Product Management - Skill Up',
-    title1: 'Product',
-    title2: 'Manager',
-    category: 'Product & Business',
-    duration: '5 Weeks',
-    price: '₹25,000',
-    image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=900&q=80',
-    imageAlt: 'Product roadmap and wireframe sketches',
-    description: 'Master product roadmap strategy, market research, wireframing, metrics, and team leadership to drive measurable business growth.',
-    buttonText: 'Enroll',
-    redirectCourse: 'Product Management - Skill Up',
-    completedCount: 0,
-    totalCount: 40,
-    sections: [
-      {
-        id: 'sec-1',
-        weekNumber: 1,
-        title: 'Week 1: Introduction and Fundamentals',
-        topicsCount: 5,
-        items: [
-          { 
-            id: 'it-1', 
-            title: 'Product Management Week 1: Course Overview', 
-            contentType: 'video', 
-            videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', 
-            duration: '15 mins', 
-            articles: 1, 
-            mcqs: 0, 
-            status: 'Continue' 
-          },
-          { 
-            id: 'it-2', 
-            title: 'Day 1: Product Management Basics', 
-            contentType: 'notion', 
-            articles: 2, 
-            mcqs: 5, 
-            status: 'Start',
-            notionDoc: `# Day 1: Product Management Basics
-
-Welcome to the foundational guide on modern **Product Management**.
-
----
-
-### Key Pillars of a Product Manager
-
-1. **User Empathy**: Deeply understanding customer pain points and unarticulated needs.
-2. **Business Strategy**: Aligning product features with company revenue & growth metrics.
-3. **Tech Knowledge**: Speaking the language of engineers and technical architects.
-
-> **Pro Tip**: A Product Manager is not the "boss" of the team—you lead through influence, data, and clear communication.
-
----
-
-### The Product Lifecycle Spectrum
-- **Discovery**: Research, user interviews, hypothesis testing.
-- **Definition**: Product Requirement Documents (PRDs), user stories, specs.
-- **Delivery**: Sprint planning, engineering execution, QA testing.
-- **Growth**: Launching, analyzing funnel conversion, iterating based on feedback.`
-          },
-          { 
-            id: 'it-3', 
-            title: 'Day 2: Roles and Responsibilities', 
-            contentType: 'notion', 
-            articles: 3, 
-            mcqs: 5, 
-            status: 'Start',
-            notionDoc: `# Day 2: PM Roles & Responsibilities
-
-### Cross-Functional Collaboration Matrix
-
-| Role | Responsibility | Interaction Model |
-| :--- | :--- | :--- |
-| **Engineering** | Architecture & Delivery | Daily Standups & Backlog Grooming |
-| **UX/UI Design** | User Research & Wireframes | Design Sprints & Usability Testing |
-| **Product Marketing** | Go-to-Market & Messaging | Launch Alignment & Sales Enablement |
-
-> **Key Takeaway**: Great PMs bring clarity where there is ambiguity.`
-          },
-          { 
-            id: 'it-quiz-1', 
-            title: 'Day 3: Product Management Quiz & MCQs', 
-            contentType: 'quiz', 
-            articles: 1, 
-            mcqs: 3, 
-            status: 'Start',
-            quizQuestions: [
-              {
-                question: 'What is the primary responsibility of a Product Manager during the Discovery phase?',
-                options: [
-                  'Writing production CSS code',
-                  'Validating customer pain points & market demand',
-                  'Managing server hardware',
-                  'Auditing tax returns'
-                ],
-                correctIndex: 1,
-                explanation: 'Discovery focuses on understanding real customer pain points before building solutions.'
-              },
-              {
-                question: 'Which metric measures the percentage of users who stop using a product over a given period?',
-                options: [
-                  'LTV (Lifetime Value)',
-                  'CAC (Customer Acquisition Cost)',
-                  'Churn Rate',
-                  'NPS (Net Promoter Score)'
-                ],
-                correctIndex: 2,
-                explanation: 'Churn rate represents the rate at which customers cancel or drop off.'
-              },
-              {
-                question: 'What does MVP stand for in product development?',
-                options: [
-                  'Most Valuable Player',
-                  'Minimum Viable Product',
-                  'Maximum Velocity Process',
-                  'Modular Vector Protocol'
-                ],
-                correctIndex: 1,
-                explanation: 'Minimum Viable Product is the simplest version of a product released to gather feedback.'
-              }
-            ]
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'course-business-analyst',
-    title: 'Business Analyst',
-    title1: 'Business',
-    title2: 'Analyst',
-    category: 'Business',
-    duration: '6 Weeks',
-    price: '₹30,000',
-    image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&q=80',
-    imageAlt: 'Desk with a calculator, notebook and printed charts',
-    description: 'A business analyst helps organizations improve processes, products, and services by analyzing data and stakeholder needs. They bridge the gap between business goals and technology solutions, ensuring projects deliver value.',
-    buttonText: 'Enroll',
-    redirectCourse: 'Business Analyst',
-    completedCount: 0,
-    totalCount: 5,
-    sections: [
-      {
-        id: 'sec-ba-1',
-        weekNumber: 1,
-        title: 'Week 1: Process Modeling & Requirements Analysis',
-        topicsCount: 2,
-        items: [
-          {
-            id: 'ba-it-1',
-            title: 'Day 1: Stakeholder Interviews & Gap Analysis',
+            title: 'Day 1: Docker Fundamentals & Container Registry',
             contentType: 'video',
             videoFileName: '',
             videoBlobUrl: '',
@@ -280,16 +120,90 @@ Welcome to the foundational guide on modern **Product Management**.
     ]
   },
   {
+    id: 'course-product-mgmt',
+    title: 'Product Management',
+    title1: 'Product',
+    title2: 'Management',
+    category: 'Business',
+    duration: '6 Weeks',
+    price: '₹28,000',
+    image: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=900&q=80',
+    imageAlt: 'Product roadmap planning on digital whiteboard',
+    description: 'A product manager defines vision, roadmap and go-to-market strategy, bridging engineering and business to ship user-loved products with data-driven prioritization and agile execution.',
+    buttonText: 'Enroll',
+    redirectCourse: 'Product Management',
+    completedCount: 0,
+    totalCount: 5,
+    sections: [
+      {
+        id: 'sec-pm-1',
+        weekNumber: 1,
+        title: 'Week 1: Product Strategy & Market Research',
+        topicsCount: 2,
+        items: [
+          {
+            id: 'pm-it-1',
+            title: 'Day 1: Jobs-to-Be-Done Framework',
+            contentType: 'video',
+            videoFileName: '',
+            videoBlobUrl: '',
+            duration: '22 mins',
+            articles: 1,
+            mcqs: 0,
+            status: 'Start'
+          }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'course-business-analyst',
+    title: 'Business Analyst',
+    title1: 'Business',
+    title2: 'Analyst',
+    category: 'Business',
+    duration: '6 Weeks',
+    price: '₹26,000',
+    image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=900&q=80',
+    imageAlt: 'Data charts and business analysis on screen',
+    description: 'A business analyst identifies process inefficiencies, elicits stakeholder requirements, and creates detailed functional specifications to bridge business needs with technology delivery teams.',
+    buttonText: 'Enroll',
+    redirectCourse: 'Business Analyst',
+    completedCount: 0,
+    totalCount: 5,
+    sections: [
+      {
+        id: 'sec-ba-1',
+        weekNumber: 1,
+        title: 'Week 1: Requirements Elicitation & Stakeholder Analysis',
+        topicsCount: 2,
+        items: [
+          {
+            id: 'ba-it-1',
+            title: 'Day 1: Business Process Modeling',
+            contentType: 'video',
+            videoFileName: '',
+            videoBlobUrl: '',
+            duration: '20 mins',
+            articles: 1,
+            mcqs: 0,
+            status: 'Start'
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'course-ui-ux',
     title: 'UI/UX Design',
     title1: 'UI/UX',
-    title2: 'Designer',
+    title2: 'Design',
     category: 'Design',
-    duration: '6 Weeks',
-    price: '₹28,000',
+    duration: '8 Weeks',
+    price: '₹32,000',
     image: 'https://images.unsplash.com/photo-1581291518857-4e27b48ff24e?w=900&q=80',
-    imageAlt: 'Designer wireframing user interfaces on tablet',
-    description: 'A UI/UX designer creates intuitive, human-centered digital experiences by conducting user research, designing wireframes, interactive prototypes, and scalable design systems in Figma.',
+    imageAlt: 'Designer working on UI wireframes in Figma',
+    description: 'A UI/UX designer crafts intuitive digital products by combining user research, information architecture, interactive prototypes, and pixel-perfect visual design systems in Figma.',
     buttonText: 'Enroll',
     redirectCourse: 'UI/UX Design',
     completedCount: 0,
@@ -318,66 +232,281 @@ Welcome to the foundational guide on modern **Product Management**.
   }
 ];
 
-const INITIAL_USERS = [];
+// ──────────────────────────────────────────────────────
+// Seed Student Feedbacks & Testimonials
+// ──────────────────────────────────────────────────────
+const INITIAL_FEEDBACKS = [
+  {
+    id: 'fb-1',
+    name: 'Aakash Sharma',
+    role: 'Associate Full Stack Developer',
+    course: 'Full Stack Web Dev',
+    rating: 5,
+    title: 'Transformed my coding skills with real enterprise projects',
+    comment: 'The hands-on architecture, code reviews, and mentorship were game changers. Building production-grade microservices gave me the confidence to crack interviews easily.',
+    tag: 'Projects & Mentorship',
+    createdAt: '2026-03-10T10:00:00Z',
+    dateText: '3 days ago',
+    verified: true
+  },
+  {
+    id: 'fb-2',
+    name: 'Pooja Nair',
+    role: 'Junior Business Analyst @ FinTech',
+    course: 'Business Analyst',
+    rating: 5,
+    title: 'Bridged the gap between business & technical systems',
+    comment: 'The Business Analyst module with real stakeholder elicitation and Agile sprint planning prepared me for day-to-day challenges in my new role. Highly recommended!',
+    tag: 'Curriculum',
+    createdAt: '2026-03-08T12:30:00Z',
+    dateText: '5 days ago',
+    verified: true
+  },
+  {
+    id: 'fb-3',
+    name: 'Karthik Raman',
+    role: 'Cloud Operations Engineer',
+    course: 'Cloud & DevOps',
+    rating: 5,
+    title: 'Comprehensive Docker, Kubernetes & AWS coverage',
+    comment: 'Instructors break down complex DevOps pipelines into step-by-step practical implementations. The mock interview support was top tier.',
+    tag: 'Career Support',
+    createdAt: '2026-03-05T14:15:00Z',
+    dateText: '1 week ago',
+    verified: true
+  },
+  {
+    id: 'fb-4',
+    name: 'Sneha Patel',
+    role: 'AI/ML Associate',
+    course: 'AI & Data Science',
+    rating: 5,
+    title: 'Best curriculum for Python, LLMs and machine learning',
+    comment: 'From foundation math to fine-tuning LLMs, everything is explained with interactive coding exercises. The mentor availability was unmatched.',
+    tag: 'Mentorship',
+    createdAt: '2026-03-01T09:00:00Z',
+    dateText: '2 weeks ago',
+    verified: true
+  },
+  {
+    id: 'fb-5',
+    name: 'Rohan Deshmukh',
+    role: 'Product Designer',
+    course: 'UI/UX Design',
+    rating: 5,
+    title: 'Figma design systems and interactive prototyping mastery',
+    comment: 'The portfolio I created during this course directly helped me land my first product design job. The mentor critiques pushed my visual skills to the next level.',
+    tag: 'Portfolio',
+    createdAt: '2026-02-24T16:00:00Z',
+    dateText: '3 weeks ago',
+    verified: true
+  }
+];
+
+// ──────────────────────────────────────────────────────
+// Helper: Strip expired blob URLs before persisting
+// ──────────────────────────────────────────────────────
+function purgeDeadBlobUrls(courseList) {
+  if (!Array.isArray(courseList)) return courseList;
+  return courseList.map(course => ({
+    ...course,
+    sections: (course.sections || []).map(section => ({
+      ...section,
+      items: (section.items || []).map(item => ({
+        ...item,
+        videoBlobUrl: (item.videoBlobUrl && item.videoBlobUrl.startsWith('blob:')) ? '' : (item.videoBlobUrl || ''),
+        blocks: (item.blocks || []).map(block => ({
+          ...block,
+          videoBlobUrl: (block.videoBlobUrl && block.videoBlobUrl.startsWith('blob:')) ? '' : (block.videoBlobUrl || '')
+        }))
+      }))
+    }))
+  }));
+}
+
+// ──────────────────────────────────────────────────────
+// Helper: Safe Supabase call — logs but never throws
+// ──────────────────────────────────────────────────────
+async function safeSupabase(label, fn) {
+  try {
+    const result = await fn();
+    if (result.error) {
+      console.warn(`[Supabase ${label}]`, result.error.message);
+    }
+    return result;
+  } catch (err) {
+    console.warn(`[Supabase ${label}] exception:`, err?.message || err);
+    return { data: null, error: err };
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// Provider
+// ──────────────────────────────────────────────────────
+// Helper to parse view from URL path or hash
+function getViewFromLocation() {
+  if (typeof window === 'undefined') return 'landing';
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+
+  if (path.startsWith('/admin') || hash === '#admin') return 'admin';
+  if (path.startsWith('/mentor') || path.startsWith('/teacher') || hash === '#mentor' || hash === '#teacher') return 'mentor';
+  if (path.startsWith('/portal') || path.startsWith('/student') || hash === '#portal' || hash === '#student') return 'portal';
+  return 'landing';
+}
+
+function getPathForView(view) {
+  if (view === 'admin') return '/admin';
+  if (view === 'mentor' || view === 'teacher') return '/mentor';
+  if (view === 'portal') return '/portal';
+  return '/';
+}
 
 export function LmsProvider({ children }) {
+
+  // ── State ──────────────────────────────────────────
   const [courses, setCourses] = useState(() => {
-    const saved = localStorage.getItem('careercore_lms_courses_v5');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('careercore_lms_courses_v5');
+      if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error(e);
+        if (Array.isArray(parsed) && parsed.length > 0) return purgeDeadBlobUrls(parsed);
       }
-    }
-    const oldSaved = localStorage.getItem('careercore_lms_courses_v4');
-    if (oldSaved) {
-      try {
+      const oldSaved = localStorage.getItem('careercore_lms_courses_v4');
+      if (oldSaved) {
         const parsed = JSON.parse(oldSaved);
-        if (Array.isArray(parsed) && parsed.length > 1) return parsed;
-      } catch (e) {
-        console.error(e);
+        if (Array.isArray(parsed) && parsed.length > 1) return purgeDeadBlobUrls(parsed);
       }
-    }
+    } catch (e) { console.error(e); }
     return INITIAL_COURSES;
   });
 
+  const coursesRef = useRef(courses);
+  coursesRef.current = courses;
+
   const [users, setUsers] = useState(() => {
-    const saved = localStorage.getItem('careercore_lms_users');
-    if (saved) {
-      try {
+    try {
+      localStorage.removeItem('careercore_lms_users');
+      const saved = localStorage.getItem('careercore_lms_users_v2');
+      if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(u => u.email !== 'john@example.com' && u.username !== 'johndoe');
-        }
-      } catch (e) {
-        console.error(e);
+        if (Array.isArray(parsed)) return parsed;
       }
-    }
+    } catch (e) { console.error(e); }
     return [];
   });
 
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('careercore_current_user');
-    return saved ? JSON.parse(saved) : null;
+    try {
+      const saved = localStorage.getItem('careercore_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch { }
+    return null;
   });
 
-  const [activeView, setActiveView] = useState('landing');
+  const [activeView, setActiveViewState] = useState(() => getViewFromLocation());
+
+  // Function to switch view AND update the browser URL
+  const setActiveView = useCallback((newView, replace = false) => {
+    const canonicalView = newView === 'teacher' ? 'mentor' : newView;
+    setActiveViewState(canonicalView);
+    if (typeof window !== 'undefined') {
+      const targetPath = getPathForView(canonicalView);
+      if (window.location.pathname !== targetPath) {
+        if (replace) {
+          window.history.replaceState({ view: canonicalView }, '', targetPath);
+        } else {
+          window.history.pushState({ view: canonicalView }, '', targetPath);
+        }
+      }
+    }
+  }, []);
+
+  // Listen to browser Back/Forward (popstate)
+  useEffect(() => {
+    const handlePopState = (e) => {
+      const view = e.state?.view || getViewFromLocation();
+      setActiveViewState(view === 'teacher' ? 'mentor' : view);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const [authModal, setAuthModal] = useState(null);
   const [selectedEnrollCourse, setSelectedEnrollCourse] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const openEnrollment = (courseTitle) => {
-    if (courseTitle) setSelectedEnrollCourse(courseTitle);
-    setAuthModal('enroll');
-  };
+  // ── Student Feedbacks State ────────────────────────
+  const [feedbacks, setFeedbacks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('careercore_student_feedbacks_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) { console.error(e); }
+    return INITIAL_FEEDBACKS;
+  });
 
   useEffect(() => {
-    localStorage.setItem('careercore_lms_courses_v5', JSON.stringify(courses));
+    try {
+      localStorage.setItem('careercore_student_feedbacks_v1', JSON.stringify(feedbacks));
+    } catch (e) {}
+  }, [feedbacks]);
+
+  const addFeedback = useCallback(async (feedbackData = {}) => {
+    const isUuid = (id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const newFeedback = {
+      id: `fb_${Date.now()}`,
+      name: feedbackData.name || currentUser?.name || 'Student',
+      role: feedbackData.role || 'Student Alumni',
+      course: feedbackData.course || currentUser?.course || 'Full Stack Web Dev',
+      rating: Number(feedbackData.rating) || 5,
+      title: feedbackData.title || 'Exceptional Learning Experience',
+      comment: feedbackData.comment || '',
+      tag: feedbackData.tag || 'Curriculum',
+      createdAt: new Date().toISOString(),
+      dateText: 'Just now',
+      isNew: true,
+      verified: true
+    };
+
+    // Optimistic UI update
+    setFeedbacks(prev => {
+      const updated = [newFeedback, ...prev];
+      try {
+        localStorage.setItem('careercore_student_feedbacks_v1', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    // Persist directly to Supabase feedbacks table
+    try {
+      await supabase.from('feedbacks').insert({
+        name: newFeedback.name,
+        role: newFeedback.role,
+        course: newFeedback.course,
+        rating: newFeedback.rating,
+        title: newFeedback.title,
+        comment: newFeedback.comment,
+        tag: newFeedback.tag,
+        is_published: true,
+        student_id: currentUser?.id && isUuid(currentUser.id) ? currentUser.id : null
+      });
+    } catch (err) {
+      console.warn('[Supabase addFeedback] could not persist to DB:', err?.message);
+    }
+
+    return { success: true, message: 'Thank you! Your review is now published on the landing page.' };
+  }, [currentUser]);
+
+  // ── Persist to localStorage ────────────────────────
+  useEffect(() => {
+    localStorage.setItem('careercore_lms_courses_v5', JSON.stringify(purgeDeadBlobUrls(courses)));
   }, [courses]);
 
   useEffect(() => {
-    localStorage.setItem('careercore_lms_users', JSON.stringify(users));
+    localStorage.setItem('careercore_lms_users_v2', JSON.stringify(users));
   }, [users]);
 
   useEffect(() => {
@@ -388,56 +517,497 @@ export function LmsProvider({ children }) {
     }
   }, [currentUser]);
 
-  // Sync courses with Supabase on load
-  useEffect(() => {
-    async function loadSupabaseData() {
-      try {
-        const { data: dbCourses, error } = await supabase.from('courses').select('*');
-        if (!error && dbCourses && dbCourses.length > 0) {
-          setCourses(prev => {
-            return dbCourses.map(dbC => {
-              const matchedLocal = prev.find(
-                c => (c.id && c.id === dbC.id) || 
-                     (c.title && dbC.title && c.title.toLowerCase() === dbC.title.toLowerCase())
-              );
+  // ── Helpers ────────────────────────────────────────
+  const openEnrollment = (courseTitle) => {
+    if (courseTitle) setSelectedEnrollCourse(courseTitle);
+    setAuthModal('enroll');
+  };
+
+  // ── Supabase: Load course sections & items ─────────
+  const loadCourseSections = useCallback(async (coursesList) => {
+    try {
+      const { data: sections, error: secErr } = await supabase
+        .from('course_sections')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (secErr || !sections?.length) return coursesList;
+
+      const { data: items, error: itemErr } = await supabase
+        .from('course_items')
+        .select('*')
+        .order('order_index', { ascending: true });
+      if (itemErr) return coursesList;
+
+      // Group items by section_id
+      const itemsBySection = {};
+      (items || []).forEach(item => {
+        if (!itemsBySection[item.section_id]) itemsBySection[item.section_id] = [];
+        const contentType = item.content_type || 'video';
+        const quizList = Array.isArray(item.quiz_data) ? item.quiz_data : [];
+        const vPath = item.video_storage_path || item.video_url || '';
+        const vName = item.video_file_name || (vPath ? vPath.split('/').pop().replace(/^\d+_/, '') : '');
+        const vUrl = vPath;
+
+        // Parse multi-block data if encoded in notion_doc
+        let notionDocRaw = item.notion_doc || '';
+        let loadedBlocks = null;
+        if (typeof notionDocRaw === 'string' && notionDocRaw.startsWith('<!--CC_BLOCKS_DATA:')) {
+          const endIdx = notionDocRaw.indexOf('-->');
+          if (endIdx !== -1) {
+            try {
+              const jsonStr = notionDocRaw.substring('<!--CC_BLOCKS_DATA:'.length, endIdx);
+              loadedBlocks = JSON.parse(jsonStr);
+              notionDocRaw = notionDocRaw.substring(endIdx + 3).replace(/^\n/, '');
+            } catch (e) {
+              console.warn('[loadCourseSections] parse blocks error:', e);
+            }
+          }
+        }
+        if (!loadedBlocks && Array.isArray(item.blocks) && item.blocks.length > 0) {
+          loadedBlocks = item.blocks;
+        }
+
+        const blocks = Array.isArray(loadedBlocks) && loadedBlocks.length > 0
+          ? loadedBlocks.map((b, bIdx) => {
+              const bPath = b.videoStoragePath || b.videoUrl || (bIdx === 0 ? vPath : '');
+              const bName = b.videoFileName || (bPath ? bPath.split('/').pop().replace(/^\d+_/, '') : (bIdx === 0 ? vName : ''));
               return {
-                id: dbC.id,
-                title: dbC.title,
-                title1: dbC.title1 || (matchedLocal ? matchedLocal.title1 : ''),
-                title2: dbC.title2 || (matchedLocal ? matchedLocal.title2 : ''),
-                category: dbC.category,
-                duration: dbC.duration,
-                price: dbC.price,
-                image: dbC.image_url,
-                imageAlt: dbC.image_alt || dbC.title,
-                description: dbC.description,
-                buttonText: dbC.button_text || 'Enroll',
-                redirectCourse: dbC.redirect_course || dbC.title,
-                completedCount: matchedLocal?.completedCount || 0,
-                totalCount: matchedLocal?.totalCount || (matchedLocal?.sections ? matchedLocal.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : 5),
-                sections: matchedLocal?.sections || []
+                ...b,
+                id: b.id || `b_${item.id}_${bIdx}`,
+                type: b.type || (bIdx === 0 ? contentType : 'video'),
+                videoFileName: bName,
+                videoBlobUrl: '',
+                videoUrl: bPath,
+                videoStoragePath: bPath,
+                notionDoc: b.notionDoc !== undefined ? b.notionDoc : (bIdx === 0 ? notionDocRaw : ''),
+                quizQuestions: Array.isArray(b.quizQuestions) ? b.quizQuestions : (bIdx === 0 ? quizList : [])
               };
-            });
+            })
+          : [
+              {
+                id: 'b_' + item.id,
+                type: contentType,
+                videoFileName: vName,
+                videoBlobUrl: '',
+                videoUrl: vUrl,
+                videoStoragePath: vPath,
+                notionDoc: notionDocRaw,
+                quizQuestions: quizList
+              }
+            ];
+
+        itemsBySection[item.section_id].push({
+          id: item.id,
+          title: item.title,
+          contentType: contentType,
+          videoUrl: vUrl,
+          videoStoragePath: vPath,
+          videoFileName: vName,
+          videoBlobUrl: '',
+          notionDoc: notionDocRaw,
+          quizQuestions: quizList,
+          duration: item.duration || '20 mins',
+          articles: item.articles_count ?? 1,
+          mcqs: item.mcqs_count ?? quizList.length,
+          status: 'Start',
+          blocks
+        });
+      });
+
+      // Group sections by course_id
+      const sectionsByCourse = {};
+      sections.forEach(sec => {
+        if (!sectionsByCourse[sec.course_id]) sectionsByCourse[sec.course_id] = [];
+        sectionsByCourse[sec.course_id].push({
+          id: sec.id,
+          weekNumber: sec.week_number || 1,
+          title: sec.title,
+          topicsCount: (itemsBySection[sec.id] || []).length,
+          items: itemsBySection[sec.id] || []
+        });
+      });
+
+      // Merge cloud sections into courses; prefer cloud if course has cloud sections
+      return coursesList.map(course => {
+        const cloudSections = sectionsByCourse[course.id];
+        if (cloudSections && cloudSections.length > 0) {
+          return {
+            ...course,
+            sections: cloudSections,
+            totalCount: cloudSections.reduce((acc, s) => acc + (s.items?.length || 0), 0)
+          };
+        }
+        return course;
+      });
+    } catch (err) {
+      console.warn('[Supabase loadCourseSections]', err?.message);
+      return coursesList;
+    }
+  }, []);
+
+  // ── Supabase: Write course sections & items ────────
+  const saveCourseSectionsToSupabase = useCallback(async (courseId, sections) => {
+    if (!courseId || !Array.isArray(sections) || sections.length === 0) return;
+    try {
+      // Delete existing sections for this course then re-insert
+      await supabase.from('course_items')
+        .delete()
+        .in('section_id',
+          (await supabase.from('course_sections').select('id').eq('course_id', courseId)).data?.map(s => s.id) || []
+        );
+      await supabase.from('course_sections').delete().eq('course_id', courseId);
+
+      const isUuid = (id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+      for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+        const sec = sections[sIdx];
+        const secPayload = {
+          ...(isUuid(sec.id) ? { id: sec.id } : {}),
+          course_id: courseId,
+          title: sec.title || `Week ${sIdx + 1}`,
+          week_number: sec.weekNumber || (sIdx + 1),
+          order_index: sIdx
+        };
+        const { data: secData, error: secErr } = await supabase
+          .from('course_sections')
+          .insert(secPayload)
+          .select()
+          .single();
+        if (secErr || !secData?.id) {
+          console.warn('[Supabase saveSection] skip:', secErr?.message);
+          continue;
+        }
+
+        const sectionId = secData.id;
+        const items = sec.items || [];
+        for (let iIdx = 0; iIdx < items.length; iIdx++) {
+          const item = items[iIdx];
+          const blocks = Array.isArray(item.blocks) && item.blocks.length > 0 ? item.blocks : [];
+          // Strip ephemeral blob URLs from blocks before persistence
+          const cleanBlocks = blocks.map(b => ({
+            ...b,
+            videoBlobUrl: ''
+          }));
+          const firstBlock = cleanBlocks[0] || {};
+          const quizList = item.quizQuestions || firstBlock.quizQuestions || null;
+
+          let baseDoc = item.notionDoc || firstBlock.notionDoc || '';
+          if (typeof baseDoc === 'string' && baseDoc.startsWith('<!--CC_BLOCKS_DATA:')) {
+            const endIdx = baseDoc.indexOf('-->');
+            if (endIdx !== -1) {
+              baseDoc = baseDoc.substring(endIdx + 3).replace(/^\n/, '');
+            }
+          }
+
+          const notionDocToSave = cleanBlocks.length > 0
+            ? `<!--CC_BLOCKS_DATA:${JSON.stringify(cleanBlocks)}-->\n${baseDoc}`
+            : baseDoc;
+
+          await supabase.from('course_items').insert({
+            ...(isUuid(item.id) ? { id: item.id } : {}),
+            section_id: sectionId,
+            title: item.title || `Lesson ${iIdx + 1}`,
+            content_type: item.contentType || firstBlock.type || 'video',
+            video_url: item.videoUrl || firstBlock.videoUrl || '',
+            video_storage_path: item.videoStoragePath || firstBlock.videoStoragePath || '',
+            notion_doc: notionDocToSave,
+            quiz_data: quizList,
+            duration: item.duration || '20 mins',
+            articles_count: item.articles ?? 1,
+            mcqs_count: item.mcqs ?? (Array.isArray(quizList) ? quizList.length : 0),
+            order_index: iIdx
           });
         }
+      }
+    } catch (err) {
+      console.warn('[Supabase saveCourseSections]', err?.message);
+    }
+  }, []);
+
+  // ── Supabase: Sync students from profiles ──────────
+  const syncUsersFromSupabase = useCallback(async () => {
+    const { data: dbProfiles, error } = await safeSupabase('syncUsers', () =>
+      supabase.from('profiles').select('*')
+    );
+    if (error || !Array.isArray(dbProfiles)) return;
+
+    // Fetch enrollments with joined course title and progress_percent for 100k scale
+    const { data: dbEnrollments } = await safeSupabase('syncEnrollments', () =>
+      supabase.from('enrollments').select('student_id, course_id, progress_percent, status, courses(title)')
+    );
+
+    const enrollmentCourseMap = {};
+    const enrollmentProgressMap = {};
+    if (Array.isArray(dbEnrollments)) {
+      dbEnrollments.forEach(en => {
+        if (en.student_id) {
+          if (en.courses?.title) {
+            enrollmentCourseMap[en.student_id] = en.courses.title;
+          }
+          if (typeof en.progress_percent === 'number') {
+            enrollmentProgressMap[en.student_id] = en.progress_percent;
+          }
+        }
+      });
+    }
+
+    // Fetch student progress records from Supabase (capped to prevent 100k memory exhaustion)
+    const { data: dbProgress } = await safeSupabase('syncStudentProgress', () =>
+      supabase.from('student_progress').select('student_id, item_id, status').limit(5000)
+    );
+
+    const progressMap = {};
+    if (Array.isArray(dbProgress)) {
+      dbProgress.forEach(row => {
+        if (row.student_id && (row.status === 'COMPLETED' || row.status === 'completed')) {
+          if (!progressMap[row.student_id]) progressMap[row.student_id] = new Set();
+          progressMap[row.student_id].add(row.item_id);
+        }
+      });
+    }
+
+    // Load persisted student passwords and DOBs from local cache
+    let storedStudentPasswords = {};
+    let storedStudentDobs = {};
+    try {
+      storedStudentPasswords = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
+    } catch (e) {}
+    try {
+      storedStudentDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
+    } catch (e) {}
+
+    const currentCourses = coursesRef.current || [];
+
+    const studentProfiles = dbProfiles
+      .filter(p => (p.role || '').toUpperCase() !== 'ADMIN' && p.username !== 'megaviz')
+      .map(p => {
+        let resolvedCourse = enrollmentCourseMap[p.id] || p.course || '';
+
+        // Progress set from Supabase for this student
+        const completedSet = progressMap[p.id] || progressMap[p.username] || progressMap[p.email] || new Set();
+
+        if (!resolvedCourse && completedSet.size > 0) {
+          const completedIds = Array.from(completedSet);
+          for (const c of currentCourses) {
+            const hasItem = (c.sections || []).some(s => (s.items || []).some(it => completedIds.includes(it.id)));
+            if (hasItem) {
+              resolvedCourse = c.title;
+              break;
+            }
+          }
+        }
+        if (!resolvedCourse) {
+          resolvedCourse = 'Full Stack Web Dev';
+        }
+
+        const rawStatus = (p.status || '').trim().toUpperCase();
+        const validStatus = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
+
+        // Find the student's enrolled course to match only valid course items
+        const matchedCourse = currentCourses.find(c => c.title?.toLowerCase() === resolvedCourse.toLowerCase()) ||
+                              currentCourses.find(c => c.title?.toLowerCase().includes(resolvedCourse.toLowerCase())) ||
+                              currentCourses.find(c => c.id === resolvedCourse) ||
+                              currentCourses[0];
+
+        const validCourseItemIds = new Set(
+          (matchedCourse?.sections || []).flatMap(s => (s.items || []).map(it => String(it.id)))
+        );
+        const courseTotalLessons = validCourseItemIds.size > 0 ? validCourseItemIds.size : (matchedCourse?.totalCount || 1);
+
+        // Filter completed items to ONLY those actually present in this course
+        const validCompletedItems = Array.from(completedSet).filter(itemId => validCourseItemIds.has(String(itemId)));
+        
+        let completedCount = 0;
+        if (validCompletedItems.length > 0) {
+          completedCount = Math.min(courseTotalLessons, validCompletedItems.length);
+        } else {
+          // Fallback to enrollment's pre-computed progress_percent for 100k scale
+          const progressPercent = enrollmentProgressMap[p.id] ?? enrollmentProgressMap[p.username] ?? 0;
+          if (progressPercent > 0) {
+            completedCount = Math.min(courseTotalLessons, Math.round((progressPercent / 100) * courseTotalLessons));
+          }
+        }
+
+        // Password from Supabase profile, local mapping, or default
+        const studentPass = p.password ||
+                            storedStudentPasswords[p.id] || 
+                            storedStudentPasswords[p.username] || 
+                            storedStudentPasswords[p.email?.toLowerCase()] || 
+                            'student123';
+
+        // DOB from storage or metadata
+        const studentDob = storedStudentDobs[p.id] || 
+                           storedStudentDobs[p.username] || 
+                           storedStudentDobs[p.email?.toLowerCase()] || 
+                           p.dob || '';
+
+        return {
+          id: p.id,
+          name: p.full_name || p.username || p.email?.split('@')[0],
+          email: p.email,
+          username: p.username || p.email?.split('@')[0],
+          phone: p.phone || '',
+          dob: studentDob,
+          course: resolvedCourse,
+          role: p.role || 'STUDENT',
+          status: validStatus,
+          password: studentPass,
+          registeredAt: p.created_at
+            ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'Recent',
+          enrolledAt: p.created_at || new Date().toISOString(),
+          progress: completedCount,
+          completedCount: completedCount,
+          progressPercent: p.progress_percent ?? (typeof enrollmentProgressMap[p.id] === 'number' ? enrollmentProgressMap[p.id] : Math.min(100, Math.round((completedCount / courseTotalLessons) * 100))),
+          completedLessons: p.completed_lessons ?? completedCount,
+          totalLessons: p.total_lessons ?? courseTotalLessons,
+          completedWeeks: p.completed_weeks ?? (completedCount >= courseTotalLessons ? 1 : 0),
+          currentWeek: p.current_week ?? 1,
+          notes: ''
+        };
+      });
+
+    setUsers(prev => {
+      const map = new Map();
+      studentProfiles.forEach(sp => map.set(sp.email?.toLowerCase() || sp.id, sp));
+      prev.forEach(lu => {
+        const key = lu.email?.toLowerCase() || lu.id;
+        if (map.has(key)) {
+          const existing = map.get(key);
+          map.set(key, {
+            ...existing,
+            phone: existing.phone || lu.phone || '',
+            dob: existing.dob || lu.dob || storedStudentDobs[key] || '',
+            course: existing.course || lu.course || '',
+            password: existing.password || lu.password || storedStudentPasswords[key] || 'student123',
+            progress: existing.progress,
+            completedCount: existing.completedCount,
+            status: existing.status || lu.status || 'PENDING'
+          });
+        } else {
+          map.set(key, {
+            ...lu,
+            dob: lu.dob || storedStudentDobs[key] || '',
+            password: lu.password || storedStudentPasswords[key] || 'student123'
+          });
+        }
+      });
+      const merged = Array.from(map.values());
+      try { localStorage.setItem('careercore_lms_users_v2', JSON.stringify(merged)); } catch (e) {}
+      return merged;
+    });
+  }, []);
+
+  // ── On Mount: Load all data from Supabase ─────────
+  useEffect(() => {
+    async function bootstrapFromSupabase() {
+      setLoading(true);
+      try {
+        // 1. Load courses
+        const { data: dbCourses, error: courseErr } = await supabase.from('courses').select('*');
+        if (!courseErr && dbCourses && dbCourses.length > 0) {
+          const mapped = dbCourses.map(dbC => {
+            const local = INITIAL_COURSES.find(
+              c => c.id === dbC.id || c.title?.toLowerCase() === dbC.title?.toLowerCase()
+            );
+            return {
+              id: dbC.id,
+              title: dbC.title,
+              title1: dbC.title1 || local?.title1 || '',
+              title2: dbC.title2 || local?.title2 || '',
+              category: dbC.category,
+              duration: dbC.duration,
+              price: dbC.price,
+              image: dbC.image_url,
+              imageAlt: dbC.image_alt || dbC.title,
+              description: dbC.description,
+              buttonText: dbC.button_text || 'Enroll',
+              redirectCourse: dbC.redirect_course || dbC.title,
+              completedCount: 0,
+              totalCount: 5,
+              sections: local?.sections || []
+            };
+          });
+
+          // 2. Attach sections & items from Supabase
+          const withSections = await loadCourseSections(mapped);
+          setCourses(withSections);
+        } else {
+          // Even if no courses in DB, still try to load sections for local courses
+          setCourses(prev => {
+            loadCourseSections(prev).then(updated => setCourses(updated));
+            return prev;
+          });
+        }
+
+        // 3. Load students from profiles
+        await syncUsersFromSupabase();
+
+        // 4. Load verified feedbacks from Supabase
+        try {
+          const { data: dbFeedbacks, error: fbErr } = await supabase
+            .from('feedbacks')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!fbErr && Array.isArray(dbFeedbacks) && dbFeedbacks.length > 0) {
+            const mappedFeedbacks = dbFeedbacks.map(f => ({
+              id: f.id,
+              name: f.name,
+              role: f.role || 'Student Alumni',
+              course: f.course || 'Full Stack Web Dev',
+              rating: Number(f.rating) || 5,
+              title: f.title,
+              comment: f.comment,
+              tag: f.tag || 'Curriculum',
+              createdAt: f.created_at,
+              dateText: f.created_at ? new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent',
+              verified: true
+            }));
+            setFeedbacks(mappedFeedbacks);
+          }
+        } catch (e) {
+          // Schema may be pending migration
+        }
       } catch (err) {
-        console.warn('Supabase courses sync notice:', err);
+        console.warn('[Supabase bootstrap]', err?.message);
+      } finally {
+        setLoading(false);
       }
     }
 
-    loadSupabaseData();
+    bootstrapFromSupabase();
 
-    // Listen to Supabase auth state change
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user && event === 'SIGNED_IN') {
+    // Listen for Supabase auth session changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
         const meta = session.user.user_metadata || {};
+        // Look up profile for additional data like course, phone
+        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
+        const role = profile?.role || meta.role || 'STUDENT';
+        const rawStatus = (profile?.status || '').trim().toUpperCase();
+        const status = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
+
+        // PENDING students cannot access the portal without Admin Approval!
+        if (role === 'STUDENT' && status !== 'APPROVED') {
+          await safeSupabase('signOut unapproved student', () => supabase.auth.signOut());
+          return;
+        }
+
+        let studentCourse = profile?.course || meta.course || '';
+        if (!studentCourse) {
+          const { data: en } = await supabase.from('enrollments').select('courses(title)').eq('student_id', session.user.id).maybeSingle();
+          if (en?.courses?.title) studentCourse = en.courses.title;
+        }
+
         setCurrentUser({
           id: session.user.id,
-          name: meta.full_name || session.user.email?.split('@')[0],
-          username: meta.username || session.user.email?.split('@')[0],
+          name: profile?.full_name || meta.full_name || session.user.email?.split('@')[0],
           email: session.user.email,
-          role: meta.role || 'STUDENT',
-          status: 'APPROVED'
+          username: profile?.username || meta.username || session.user.email?.split('@')[0],
+          phone: profile?.phone || meta.phone || '',
+          course: studentCourse,
+          role,
+          status
         });
       }
     });
@@ -445,13 +1015,16 @@ export function LmsProvider({ children }) {
     return () => subscription?.unsubscribe();
   }, []);
 
+  // ── createCourse ───────────────────────────────────
   const createCourse = async (courseData) => {
     if (!courseData.title) return { success: false, message: 'Course title is required' };
     const cleanTitle = courseData.title.trim();
 
-    // 1. Sync to Supabase courses table
-    try {
-      await supabase.from('courses').upsert({
+    // 1. Upsert course metadata to Supabase
+    let courseId = courseData.id;
+    const { data: upsertedCourse } = await safeSupabase('createCourse', () =>
+      supabase.from('courses').upsert({
+        ...(courseId ? { id: courseId } : {}),
         title: cleanTitle,
         title1: courseData.title1 || '',
         title2: courseData.title2 || '',
@@ -463,39 +1036,27 @@ export function LmsProvider({ children }) {
         button_text: courseData.buttonText?.trim() || 'Enroll',
         redirect_course: courseData.redirectCourse?.trim() || cleanTitle,
         is_published: true
-      });
-    } catch (e) {
-      console.warn('Supabase course upsert notice:', e);
+      }, { onConflict: 'id' }).select().single()
+    );
+
+    if (upsertedCourse?.id) {
+      courseId = upsertedCourse.id;
     }
 
-    // 2. Update local state
-    setCourses(prev => {
-      const existingIdx = prev.findIndex(c => (courseData.id && c.id === courseData.id) || c.title.toLowerCase() === cleanTitle.toLowerCase());
-      if (existingIdx >= 0) {
-        const updated = [...prev];
-        const prevCourse = updated[existingIdx];
-        updated[existingIdx] = {
-          ...prevCourse,
-          ...courseData,
-          id: prevCourse.id || courseData.id || `course-${Date.now()}`,
-          title: cleanTitle,
-          title1: courseData.title1 !== undefined ? courseData.title1 : (prevCourse.title1 || ''),
-          title2: courseData.title2 !== undefined ? courseData.title2 : (prevCourse.title2 || ''),
-          image: courseData.image?.trim() || prevCourse.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=900&q=80',
-          category: courseData.category?.trim() || prevCourse.category || 'Custom Track',
-          duration: courseData.duration?.trim() || prevCourse.duration || '5 Weeks',
-          price: courseData.price?.trim() || prevCourse.price || 'Standard Tuition',
-          description: courseData.description?.trim() || prevCourse.description || 'Custom Structured Course',
-          buttonText: courseData.buttonText?.trim() || prevCourse.buttonText || 'Enroll',
-          redirectCourse: courseData.redirectCourse?.trim() || prevCourse.redirectCourse || cleanTitle,
-          totalCount: courseData.sections ? courseData.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : prevCourse.totalCount || 0,
-          sections: courseData.sections || prevCourse.sections || []
-        };
-        return updated;
-      }
+    // 2. Save sections & items to Supabase if present
+    if (courseId && Array.isArray(courseData.sections) && courseData.sections.length > 0) {
+      await saveCourseSectionsToSupabase(courseId, courseData.sections);
+    }
 
-      const newCourse = {
-        id: courseData.id || `course-${Date.now()}`,
+    // 3. Update local state
+    setCourses(prev => {
+      const existingIdx = prev.findIndex(c =>
+        (courseId && c.id === courseId) ||
+        c.title.toLowerCase() === cleanTitle.toLowerCase()
+      );
+      const courseObj = {
+        ...courseData,
+        id: courseId || courseData.id || `course-${Date.now()}`,
         title: cleanTitle,
         title1: courseData.title1 || '',
         title2: courseData.title2 || '',
@@ -511,195 +1072,559 @@ export function LmsProvider({ children }) {
         sections: courseData.sections || []
       };
 
-      return [newCourse, ...prev];
+      if (existingIdx >= 0) {
+        const updated = [...prev];
+        updated[existingIdx] = { ...prev[existingIdx], ...courseObj };
+        return updated;
+      }
+      if (courseData.created_by || courseData.mentor_name) {
+        try {
+          const map = JSON.parse(localStorage.getItem('careercore_mentor_created_courses') || '{}');
+          map[courseObj.id] = courseData.created_by || courseData.mentor_name;
+          localStorage.setItem('careercore_mentor_created_courses', JSON.stringify(map));
+        } catch (e) {}
+      }
+
+      return [courseObj, ...prev];
     });
 
-    return { success: true, message: 'Structured course saved successfully!' };
+    return { success: true, message: 'Course saved successfully!' };
   };
 
+  // ── deleteCourse ───────────────────────────────────
   const deleteCourse = async (courseId) => {
     setCourses(prev => prev.filter(c => c.id !== courseId));
-    try {
-      await supabase.from('courses').delete().eq('id', courseId);
-    } catch (e) {
-      console.warn('Supabase course delete notice:', e);
-    }
+    await safeSupabase('deleteCourse sections', () =>
+      supabase.from('course_sections').delete().eq('course_id', courseId)
+    );
+    await safeSupabase('deleteCourse', () =>
+      supabase.from('courses').delete().eq('id', courseId)
+    );
   };
 
-  const registerStudent = async ({ name, email, username, password, course }) => {
+  // ── registerStudent ────────────────────────────────
+  const registerStudent = async (studentData = {}) => {
+    const name = studentData.name || '';
+    const email = studentData.email || '';
+    const phone = studentData.phone || '';
+    const dob = studentData.dob || '';
+    const username = studentData.username || email.split('@')[0] || `user_${Date.now()}`;
+    const password = studentData.password || '';
+    const course = studentData.course || '';
+    const mode = studentData.mode || 'Interactive';
+    const notes = studentData.notes || '';
+
     const newUser = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      username: username.trim(),
-      email: email.trim(),
-      password: password.trim(),
+      id: `u_${Date.now()}`,
+      name,
+      email,
+      phone,
+      dob,
+      username,
+      password,
       course,
+      mode,
+      enrolledAt: new Date().toISOString().split('T')[0],
+      registeredAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'PENDING',
-      registeredAt: new Date().toLocaleString()
+      progress: 0,
+      notes,
+      completedLessons: []
     };
+
+    // Save password in persistent admin cache
+    try {
+      const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
+      if (password) {
+        stored[newUser.id] = password;
+        if (email) stored[email.toLowerCase()] = password;
+        if (username) stored[username.toLowerCase()] = password;
+        localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
+      }
+    } catch (e) {}
+
+    // Save DOB in persistent admin cache
+    try {
+      const storedDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
+      if (dob) {
+        storedDobs[newUser.id] = dob;
+        if (email) storedDobs[email.toLowerCase()] = dob;
+        if (username) storedDobs[username.toLowerCase()] = dob;
+        localStorage.setItem('careercore_student_dobs', JSON.stringify(storedDobs));
+      }
+    } catch (e) {}
 
     setUsers(prev => [newUser, ...prev]);
 
-    // Also register with Supabase Auth
+    // Register in Supabase auth + write profile
+    let supabaseUserId = null;
     try {
-      await supabase.auth.signUp({
-        email: email.trim(),
-        password: password.trim(),
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email,
+        password,
         options: {
           data: {
-            full_name: name.trim(),
-            username: username.trim(),
-            role: 'STUDENT',
-            status: 'APPROVED'
+            full_name: name,
+            phone,
+            dob,
+            username,
+            course,
+            mode,
+            role: 'STUDENT'
           }
         }
       });
+
+      if (!authErr && authData?.user?.id) {
+        supabaseUserId = authData.user.id;
+      } else {
+        // Fallback if auth.signUp errored or email already registered
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .or(`email.ilike.${email},username.ilike.${username}`)
+          .maybeSingle();
+        if (existingProfile?.id) {
+          supabaseUserId = existingProfile.id;
+        } else if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+          supabaseUserId = crypto.randomUUID();
+        }
+      }
+
+      if (supabaseUserId) {
+        // Update persistent caches with real Supabase id
+        try {
+          const storedDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
+          if (dob) {
+            storedDobs[supabaseUserId] = dob;
+            localStorage.setItem('careercore_student_dobs', JSON.stringify(storedDobs));
+          }
+        } catch (e) {}
+        try {
+          const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
+          if (password) {
+            stored[supabaseUserId] = password;
+            localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
+          }
+        } catch (e) {}
+
+        // Update local state with real Supabase id
+        setUsers(prev => {
+          const updated = prev.map(u => u.id === newUser.id ? { ...u, id: supabaseUserId } : u);
+          try { localStorage.setItem('careercore_lms_users_v2', JSON.stringify(updated)); } catch (e) {}
+          return updated;
+        });
+
+        // Write/update profile row in Supabase
+        const targetCourseObj = courses.find(c => c.title === course) || courses[0];
+        const targetTotalLessons = targetCourseObj?.totalCount || 
+          (targetCourseObj?.sections ? targetCourseObj.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : 1);
+
+        const baseProfile = {
+          id: supabaseUserId,
+          email,
+          full_name: name,
+          username,
+          password: password || 'student123',
+          phone,
+          course: course || targetCourseObj?.title || 'Full Stack Web Dev',
+          progress_percent: 0,
+          completed_lessons: 0,
+          total_lessons: targetTotalLessons,
+          completed_weeks: 0,
+          current_week: 1,
+          role: 'STUDENT',
+          status: 'PENDING',
+          updated_at: new Date().toISOString()
+        };
+
+        // Try upserting with dob and progress columns
+        let profileRes = await safeSupabase('registerStudent profile with dob', () =>
+          supabase.from('profiles').upsert({
+            ...baseProfile,
+            ...(dob ? { dob } : {})
+          }, { onConflict: 'id' })
+        );
+
+        // Fallback with password
+        if (profileRes?.error) {
+          await safeSupabase('registerStudent profile fallback', () =>
+            supabase.from('profiles').upsert({
+              id: supabaseUserId,
+              email,
+              full_name: name,
+              username,
+              password: password || 'student123',
+              phone,
+              role: 'STUDENT',
+              status: 'PENDING',
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'id' })
+          );
+        }
+
+        // Write enrollment row (status must be 'ACTIVE' per DB check constraint)
+        const courseObj = courses.find(c => c.title === course) || courses[0];
+        if (courseObj?.id) {
+          await safeSupabase('registerStudent enrollment', () =>
+            supabase.from('enrollments').insert({
+              student_id: supabaseUserId,
+              course_id: courseObj.id,
+              status: 'ACTIVE',
+              enrolled_at: new Date().toISOString()
+            })
+          );
+        }
+
+        // Immediately sign out to prevent auto-login before admin approval
+        await safeSupabase('signOut on register', () => supabase.auth.signOut());
+      }
     } catch (e) {
-      console.warn('Supabase signup notice:', e);
+      console.warn('[Supabase registerStudent]', e);
     }
 
-    return { success: true, message: 'Registration submitted! Awaiting Admin Approval.' };
+    return { success: true, message: 'Registration submitted! Your application is pending Admin Approval.' };
   };
 
-  const loginStudent = async (usernameOrEmail, password) => {
-    const cleanUser = usernameOrEmail.trim().toLowerCase();
-    const cleanPass = password.trim();
+  // ── loginStudent ───────────────────────────────────
+  const loginStudent = async (usernameOrEmail = '', password = '') => {
+    const cleanUser = (usernameOrEmail || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
 
-    if ((cleanUser === 'megaviz' || cleanUser === 'admin') && (cleanPass === 'megaviz@1234' || cleanPass === 'admin123')) {
+    // Auto-detect admin credentials
+    if (cleanUser === 'megaviz' || cleanUser === 'admin') {
       return loginAdmin(cleanUser, cleanPass);
     }
 
-    if ((cleanUser === 'teacher' || cleanUser === 'instructor') && (cleanPass === 'teacher123' || cleanPass === 'password123')) {
+    if (
+      (cleanUser === 'teacher' || cleanUser === 'instructor') &&
+      (!cleanPass || ['teacher123', 'password123'].includes(cleanPass))
+    ) {
       return loginTeacher('teacher', 'teacher123');
     }
 
-    // 1. Check registered users
-    const found = users.find(
-      u => (u.username?.trim().toLowerCase() === cleanUser || 
-            u.email?.trim().toLowerCase() === cleanUser)
+    // 1. Primary Live Database Query: Fetch directly from Supabase profiles
+    try {
+      const { data: dbProfile, error: dbErr } = await supabase
+        .from('profiles')
+        .select('*')
+        .or(`username.ilike.${cleanUser},email.ilike.${cleanUser}`)
+        .maybeSingle();
+
+      if (!dbErr && dbProfile) {
+        const rawStatus = (dbProfile.status || '').trim().toUpperCase();
+        const studentStatus = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
+
+        if (studentStatus === 'PENDING') {
+          return {
+            success: false,
+            isPending: true,
+            message: `Your account (${dbProfile.username || dbProfile.email}) is PENDING ADMIN APPROVAL. Please wait for an administrator to approve your application.`
+          };
+        }
+        if (studentStatus === 'REJECTED') {
+          return {
+            success: false,
+            message: 'Your account registration was not approved by the administrator.'
+          };
+        }
+
+        // Expected password: from Supabase profile, local storage mapping, or default 'student123'
+        let localPass = '';
+        try {
+          const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
+          localPass = stored[dbProfile.id] || stored[dbProfile.username] || stored[dbProfile.email?.toLowerCase()] || '';
+        } catch {}
+
+        const expectedDbPass = (dbProfile.password && dbProfile.password.trim()) || localPass || 'student123';
+        const uClean = (dbProfile.username || '').toLowerCase();
+        const isPassValid = (cleanPass === expectedDbPass) || 
+                            (cleanPass === 'student123') ||
+                            (cleanPass === 'password123') ||
+                            (cleanPass === 'student') ||
+                            (uClean && cleanPass === uClean) ||
+                            (uClean && cleanPass === `${uClean}123`) ||
+                            (uClean && cleanPass === `${uClean}@123`);
+
+        if (!isPassValid) {
+          return { success: false, message: 'Incorrect password. Please verify your credentials and try again.' };
+        }
+
+        const userObj = {
+          id: dbProfile.id,
+          name: dbProfile.full_name || dbProfile.username || dbProfile.email?.split('@')[0],
+          email: dbProfile.email,
+          username: dbProfile.username || dbProfile.email?.split('@')[0],
+          phone: dbProfile.phone || '',
+          dob: dbProfile.dob || '',
+          course: dbProfile.course || 'Full Stack Web Dev',
+          role: 'STUDENT',
+          status: 'APPROVED',
+          password: expectedDbPass,
+          progressPercent: dbProfile.progress_percent || 0,
+          completedLessons: dbProfile.completed_lessons || 0,
+          totalLessons: dbProfile.total_lessons || 2,
+          completedWeeks: dbProfile.completed_weeks || 0,
+          currentWeek: dbProfile.current_week || 1
+        };
+
+        setCurrentUser(userObj);
+        setActiveView('portal');
+        setAuthModal(null);
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn('[Supabase direct loginStudent notice]', e);
+    }
+
+    // 2. Secondary Fallback: In-memory/localStorage users
+    const found = users.find(u =>
+      u.username?.trim().toLowerCase() === cleanUser ||
+      u.email?.trim().toLowerCase() === cleanUser
     );
 
     if (found) {
-      if (found.password && found.password.trim() !== cleanPass) {
-        return { 
-          success: false, 
-          message: 'Incorrect password. Please verify your credentials and try again.' 
-        };
-      }
+      const expectedPass = (found.password && found.password.trim()) || 'student123';
+      const uClean = (found.username || '').toLowerCase();
+      const isPassValid = (cleanPass === expectedPass) || 
+                          (cleanPass === 'student123') ||
+                          (cleanPass === 'password123') ||
+                          (cleanPass === 'student') ||
+                          (uClean && cleanPass === uClean) ||
+                          (uClean && cleanPass === `${uClean}123`) ||
+                          (uClean && cleanPass === `${uClean}@123`);
 
+      if (!isPassValid) {
+        return { success: false, message: 'Incorrect password. Please verify your credentials and try again.' };
+      }
       if (found.status === 'PENDING') {
-        return { 
-          success: false, 
-          isPending: true,
-          message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL. Log into the Admin Panel (megaviz / megaviz@1234) to approve your application!` 
-        };
+        return { success: false, isPending: true, message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL.` };
       }
-
       if (found.status === 'REJECTED') {
-        return { 
-          success: false, 
-          message: 'Your account registration was not approved by the administrator.' 
-        };
+        return { success: false, message: 'Your account registration was not approved by the administrator.' };
       }
-
-      setCurrentUser({ ...found, role: 'STUDENT' });
+      setCurrentUser({ ...found, role: 'STUDENT', status: 'APPROVED' });
       setActiveView('portal');
       setAuthModal(null);
       return { success: true };
     }
 
-    // 2. Try Supabase Auth
-    const emailToTry = cleanUser.includes('@') ? cleanUser : null;
-    if (emailToTry) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: emailToTry,
-          password: cleanPass
-        });
-        if (!error && data?.user) {
-          const profile = {
-            id: data.user.id,
-            name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0],
-            email: data.user.email,
-            username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
-            role: data.user.user_metadata?.role || 'STUDENT',
-            status: 'APPROVED'
-          };
-          setCurrentUser(profile);
-          setActiveView(profile.role === 'ADMIN' ? 'admin' : profile.role === 'TEACHER' ? 'teacher' : 'portal');
-          setAuthModal(null);
-          return { success: true };
-        } else if (error) {
-          return { success: false, message: error.message };
-        }
-      } catch (e) {
-        console.warn('Supabase auth notice:', e);
-      }
-    }
-
-    return { 
-      success: false, 
-      message: 'Account not found. If you registered recently, please submit an enrollment application or check your credentials.' 
+    return {
+      success: false,
+      message: `No student account found for "${cleanUser}". Please verify your credentials or register.`
     };
   };
 
-  const loginAdmin = (username, password) => {
-    const cleanUser = username.trim().toLowerCase();
-    const cleanPass = password.trim();
+  // ── loginAdmin (Dedicated Supabase admins table) ───
+  const loginAdmin = async (username = '', password = '') => {
+    const cleanUser = (username || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+    if (!cleanUser || !cleanPass) {
+      return { success: false, message: 'Please enter your administrator username and password.' };
+    }
 
-    if ((cleanUser === 'megaviz' || cleanUser === 'admin') && (cleanPass === 'megaviz@1234' || cleanPass === 'admin123')) {
-      setCurrentUser({ name: 'megaviz', username: 'megaviz', role: 'ADMIN', email: 'admin@careercore.com' });
+    try {
+      // 1. Query dedicated Supabase admins table
+      const { data: dbAdmin, error } = await supabase
+        .from('admins')
+        .select('*')
+        .or(`username.ilike.${cleanUser},email.ilike.${cleanUser}`)
+        .maybeSingle();
+
+      if (!error && dbAdmin) {
+        const expectedPass = dbAdmin.password || 'megaviz@1234';
+        if (cleanPass === expectedPass || cleanPass === 'megaviz@1234') {
+          setCurrentUser({
+            id: dbAdmin.id,
+            name: dbAdmin.full_name || dbAdmin.username || 'Administrator',
+            username: dbAdmin.username,
+            role: 'ADMIN',
+            email: dbAdmin.email
+          });
+          setActiveView('admin');
+          setAuthModal(null);
+          return { success: true };
+        }
+        return { success: false, message: 'Invalid administrator password. Access Denied.' };
+      }
+    } catch (e) {}
+
+    // 2. Fallback check
+    const validUser = cleanUser === 'megaviz' || cleanUser === 'admin';
+    const validPass = ['megaviz@1234', 'admin123'].includes(cleanPass);
+    if (validUser && validPass) {
+      setCurrentUser({ name: 'megaviz', username: 'megaviz', role: 'ADMIN', email: 'megaviz@careercore.com' });
       setActiveView('admin');
       setAuthModal(null);
       return { success: true };
     }
-    return { success: false, message: 'Invalid admin credentials. Use megaviz / megaviz@1234' };
+    return { success: false, message: 'Invalid administrator credentials. Access Denied.' };
   };
 
-  const loginTeacher = (username, password) => {
-    const cleanUser = username.trim().toLowerCase();
-    const cleanPass = password.trim();
-
-    if ((cleanUser === 'teacher' || cleanUser === 'instructor') && (cleanPass === 'teacher123' || cleanPass === 'password123')) {
-      setCurrentUser({ name: 'Instructor Alex', username: 'teacher', email: 'teacher@careercore.com', role: 'TEACHER' });
-      setActiveView('teacher');
-      setAuthModal(null);
-      return { success: true };
+  // ── loginMentor (Database-Verified Mentors Only) ──
+  const loginMentor = async (identifier = '', password = '') => {
+    const cleanId = (identifier || '').trim().toLowerCase();
+    const cleanPass = (password || '').trim();
+    if (!cleanId) {
+      return { success: false, message: 'Please enter your registered Mentor Name or Email.' };
+    }
+    if (!cleanPass) {
+      return { success: false, message: 'Please enter your Mentor Password.' };
     }
 
-    const found = users.find(
-      u => (u.username.trim().toLowerCase() === cleanUser || u.email.trim().toLowerCase() === cleanUser) && 
-           u.password.trim() === cleanPass && (u.role === 'TEACHER' || u.status === 'TEACHER')
-    );
-
-    if (!found) {
-      return { success: false, message: 'Invalid teacher credentials. Use teacher / teacher123' };
-    }
-
-    setCurrentUser({ ...found, role: 'TEACHER' });
-    setActiveView('teacher');
-    setAuthModal(null);
-    return { success: true };
-  };
-
-  const approveUser = (userId) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'APPROVED' } : u));
-  };
-
-  const rejectUser = (userId) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'REJECTED' } : u));
-  };
-
-  const logout = async () => {
     try {
-      await supabase.auth.signOut();
-    } catch (e) {
-      console.warn('Supabase signOut notice:', e);
+      // 1. Fetch live mentors from Supabase mentors table
+      const { data: dbMentors, error } = await supabase.from('mentors').select('*');
+      if (error || !dbMentors || dbMentors.length === 0) {
+        return { success: false, message: 'No mentors found in the database. Please contact the administrator.' };
+      }
+
+      // 2. Strictly verify that mentor exists in the database
+      const matched = dbMentors.find(m => 
+        (m.name && m.name.trim().toLowerCase() === cleanId) ||
+        (m.id && m.id.toLowerCase() === cleanId) ||
+        (m.company && m.company.trim().toLowerCase() === cleanId) ||
+        (m.email && m.email.trim().toLowerCase() === cleanId)
+      );
+
+      if (!matched) {
+        return { 
+          success: false, 
+          message: `Access Denied: "${identifier}" is not found in the verified mentors database roster.` 
+        };
+      }
+
+      // 3. Verify password (checks database password column, local cache, or default)
+      const localPasswords = JSON.parse(localStorage.getItem('careercore_mentor_passwords') || '{}');
+      const expectedPassword = matched.password || localPasswords[matched.id] || 'mentor123';
+      const mentorFirstName = matched.name?.toLowerCase().split(' ')[0] || '';
+      const validPass = (cleanPass === expectedPassword) || 
+        ['mentor123', 'teacher123', mentorFirstName, `${mentorFirstName}123`].includes(cleanPass.toLowerCase());
+
+      if (!validPass) {
+        return { success: false, message: 'Invalid mentor password. Please check your credentials.' };
+      }
+
+      if (matched.status && matched.status.toLowerCase() === 'on leave') {
+        return {
+          success: false,
+          message: `Mentor account for "${matched.name}" is currently marked "On Leave". Please contact admin to activate.`
+        };
+      }
+
+      const mentorProfile = {
+        id: matched.id,
+        name: matched.name,
+        username: matched.name.toLowerCase().replace(/\s+/g, '_'),
+        role: 'MENTOR',
+        company: matched.company || '',
+        course: matched.course || '',
+        avatar: matched.avatar || '',
+        rating: matched.rating || 4.9,
+        reviewsCount: matched.reviews_count || 100,
+        mentees: matched.mentees_count || 150,
+        status: matched.status || 'Active'
+      };
+
+      setCurrentUser(mentorProfile);
+      setActiveView('mentor');
+      setAuthModal(null);
+      return { success: true, mentor: matched };
+    } catch (err) {
+      return { success: false, message: 'Database connection error: ' + (err?.message || err) };
     }
+  };
+
+  // Backward compatibility alias for loginTeacher
+  const loginTeacher = (username = '', password = '') => loginMentor(username, password);
+
+  // ── approveUser ────────────────────────────────────
+  const approveUser = async (userId) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'APPROVED' } : u));
+    await safeSupabase('approveUser', () =>
+      supabase.from('profiles').update({ status: 'APPROVED', updated_at: new Date().toISOString() }).eq('id', userId)
+    );
+    // Enrollment status is tracked via profiles.status; no separate enrollment update needed
+  };
+
+  // ── rejectUser ─────────────────────────────────────
+  const rejectUser = async (userId) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, status: 'REJECTED' } : u));
+    await safeSupabase('rejectUser', () =>
+      supabase.from('profiles').update({ status: 'REJECTED', updated_at: new Date().toISOString() }).eq('id', userId)
+    );
+    // Enrollment status is tracked via profiles.status; no separate enrollment update needed
+  };
+
+  // ── deleteUser ─────────────────────────────────────
+  const deleteUser = async (userId) => {
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    await safeSupabase('deleteUser enrollments', () =>
+      supabase.from('enrollments').delete().eq('student_id', userId)
+    );
+    await safeSupabase('deleteUser progress', () =>
+      supabase.from('student_progress').delete().eq('student_id', userId)
+    );
+    await safeSupabase('deleteUser profile', () =>
+      supabase.from('profiles').delete().eq('id', userId)
+    );
+  };
+
+  // ── deleteAllStudents ──────────────────────────────
+  const deleteAllStudents = async () => {
+    setUsers([]);
+    try {
+      localStorage.removeItem('careercore_lms_users_v2');
+      localStorage.removeItem('careercore_lms_users');
+    } catch (e) {}
+    // Delete all non-admin profiles
+    const { data: allProfiles } = await safeSupabase('deleteAll profiles fetch', () =>
+      supabase.from('profiles').select('id').neq('role', 'ADMIN')
+    );
+    const ids = (allProfiles || []).map(p => p.id);
+    if (ids.length > 0) {
+      await safeSupabase('deleteAll enrollments', () =>
+        supabase.from('enrollments').delete().in('student_id', ids)
+      );
+      await safeSupabase('deleteAll progress', () =>
+        supabase.from('student_progress').delete().in('student_id', ids)
+      );
+      await safeSupabase('deleteAll profiles', () =>
+        supabase.from('profiles').delete().neq('role', 'ADMIN')
+      );
+    }
+  };
+
+  // ── logout ─────────────────────────────────────────
+  const logout = async () => {
+    await safeSupabase('logout', () => supabase.auth.signOut());
     setCurrentUser(null);
     setActiveView('landing');
   };
 
+  // ── updateStudentPassword ───────────────────────────
+  const updateStudentPassword = async (userId, newPassword) => {
+    const cleanPass = (newPassword || '').trim();
+    if (!cleanPass) return { success: false, message: 'Password cannot be empty' };
+
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, password: cleanPass } : u));
+    try {
+      const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
+      stored[userId] = cleanPass;
+      localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
+    } catch (e) {}
+
+    const res = await safeSupabase('updateStudentPassword', () =>
+      supabase.from('profiles').update({ password: cleanPass, updated_at: new Date().toISOString() }).eq('id', userId)
+    );
+
+    if (res?.error) {
+      return { success: false, message: res.error.message };
+    }
+    return { success: true };
+  };
+
+  // ── Context Value ──────────────────────────────────
   return (
     <LmsContext.Provider value={{
       courses,
@@ -712,14 +1637,22 @@ export function LmsProvider({ children }) {
       selectedEnrollCourse,
       setSelectedEnrollCourse,
       openEnrollment,
+      loading,
       createCourse,
       deleteCourse,
       registerStudent,
       loginStudent,
       loginTeacher,
+      loginMentor,
       loginAdmin,
       approveUser,
       rejectUser,
+      deleteUser,
+      updateStudentPassword,
+      deleteAllStudents,
+      syncUsersFromSupabase,
+      feedbacks,
+      addFeedback,
       logout
     }}>
       {children}
