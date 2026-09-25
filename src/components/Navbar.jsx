@@ -387,14 +387,14 @@ export default function Navbar() {
                   <>
                     <button 
                       onClick={() => { setMobileMenuOpen(false); setActiveView(getPortalView()); }}
-                      className="w-full text-center py-3 text-xs font-bold text-white bg-[#0A317B] rounded-xl flex items-center justify-center gap-2 shadow-xs"
+                      className="w-full text-center py-3 text-xs font-bold text-white bg-[#0A317B] rounded-xl flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                     >
                       <UserCheck className="w-4 h-4 text-[#1A9C9B]" />
                       <span>{getPortalLabel()}</span>
                     </button>
                     <button 
                       onClick={() => { setMobileMenuOpen(false); logout(); }}
-                      className="w-full text-center py-2.5 text-xs font-bold text-red-600 bg-red-50 rounded-xl"
+                      className="w-full text-center py-2.5 text-xs font-bold text-red-600 bg-red-50 rounded-xl cursor-pointer"
                     >
                       Logout
                     </button>
@@ -403,18 +403,35 @@ export default function Navbar() {
                   <>
                     <button 
                       onClick={() => { setMobileMenuOpen(false); setAuthModal('login'); }}
-                      className="w-full text-center py-2.5 text-xs font-bold text-[#0A317B] bg-slate-100 hover:bg-slate-200 rounded-xl"
+                      className="w-full text-center py-2.5 text-xs font-bold text-[#0A317B] bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
                     >
                       Student Login
                     </button>
 
                     <button 
                       onClick={() => { setMobileMenuOpen(false); setAuthModal('enroll'); }}
-                      className="w-full text-center py-3 text-xs font-bold text-white bg-gradient-to-r from-[#FA9C16] to-[#f58d00] rounded-xl shadow-md flex items-center justify-center gap-2"
+                      className="w-full text-center py-3 text-xs font-bold text-white bg-gradient-to-r from-[#FA9C16] to-[#f58d00] rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>Enroll Now</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
+
+                    {/* Quick Portal Switchers for Team/Mentors on Mobile */}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-center gap-4 text-[11px] font-semibold text-slate-500">
+                      <button 
+                        onClick={() => { setMobileMenuOpen(false); setActiveView('mentor'); }}
+                        className="hover:text-[#0A317B] hover:underline cursor-pointer"
+                      >
+                        Mentor Portal
+                      </button>
+                      <span>•</span>
+                      <button 
+                        onClick={() => { setMobileMenuOpen(false); setActiveView('admin'); }}
+                        className="hover:text-[#0A317B] hover:underline cursor-pointer"
+                      >
+                        Admin Portal
+                      </button>
+                    </div>
                   </>
                 )}
               </div>

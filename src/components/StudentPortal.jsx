@@ -48,6 +48,7 @@ export default function StudentPortal() {
   const [expandedWeeks, setExpandedWeeks] = useState({ 0: true, 1: false, 2: false });
   const [sidebarRailTab, setSidebarRailTab] = useState('articles'); // 'all' | 'articles' | 'quiz'
   const [activeModalItem, setActiveModalItem] = useState(null); // Item currently open in reader modal
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false); // Mobile lessons drawer toggle
   const [protectedVideoUrls, setProtectedVideoUrls] = useState({}); // Signed Supabase URLs for private video streaming
 
   // Anti-Piracy DRM: Intercept and prevent right-clicks, inspect, and downloads while reader is open
@@ -768,7 +769,7 @@ export default function StudentPortal() {
                 )}
               </div>
 
-              <div className="w-80 sm:w-96 bg-gray-200 h-2 rounded-full overflow-hidden">
+              <div className="w-full max-w-sm bg-gray-200 h-2 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all duration-500 ${isCourseFullyCompleted ? 'bg-emerald-500' : 'bg-[#1A9C9B]'}`} 
                   style={{ width: `${progressPercent}%` }}
@@ -781,7 +782,7 @@ export default function StudentPortal() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
             <button className="px-5 py-2.5 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer">
               <Award className="w-4 h-4" />
               <span>Get Certificates</span>
@@ -798,7 +799,7 @@ export default function StudentPortal() {
         </div>
 
         {/* Navigation Tabs Bar */}
-        <div className="flex items-center gap-8 border-b border-gray-200 text-xs font-bold text-gray-500">
+        <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 text-xs font-bold text-gray-500 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5">
           {['RESOURCES', 'NOTES', 'LIVE', 'LEADERBOARD', 'NOTICEBOARD'].map((tab) => (
             <button
               key={tab}
@@ -1062,6 +1063,15 @@ export default function StudentPortal() {
                     );
                   })()}
 
+                  <button
+                    type="button"
+                    onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
+                    className="lg:hidden px-2.5 py-1.5 rounded-xl bg-teal-50 border border-teal-200 text-[#0D9488] text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5 text-[#1A9C9B]" />
+                    <span>{mobileDrawerOpen ? 'Reader' : 'Lessons'}</span>
+                  </button>
+
                   <button 
                     onClick={() => setActiveModalItem(null)} 
                     className="p-1.5 rounded-xl hover:bg-gray-100 text-gray-500 hover:text-gray-900 cursor-pointer"
@@ -1072,10 +1082,10 @@ export default function StudentPortal() {
               </div>
 
               {/* Main Split Body: Left Sidebar Rail + Articles Panel + Right Content Reader */}
-              <div className="flex flex-1 overflow-hidden">
+              <div className="flex flex-1 overflow-hidden relative">
                 
                 {/* 1. SLIM LEFT VERTICAL RAIL (Icon Toolbar - Width ~64px) */}
-                <div className="w-16 bg-slate-50 border-r border-gray-200 py-4 flex flex-col items-center justify-between shrink-0 text-gray-500">
+                <div className={`${mobileDrawerOpen ? 'flex' : 'hidden lg:flex'} w-16 bg-slate-50 border-r border-gray-200 py-4 flex-col items-center justify-between shrink-0 text-gray-500 z-20`}>
                   <div className="space-y-4 w-full px-1.5">
                     {/* All Button */}
                     <button
@@ -1131,7 +1141,7 @@ export default function StudentPortal() {
                 </div>
 
                 {/* 2. ARTICLES & BLOCKS DRAWER PANEL (Middle Column) */}
-                <div className="w-64 sm:w-72 bg-white border-r border-gray-200 flex flex-col shrink-0">
+                <div className={`${mobileDrawerOpen ? 'flex' : 'hidden lg:flex'} w-full sm:w-72 bg-white border-r border-gray-200 flex-col shrink-0 z-20`}>
                   <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                     <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
                       {sidebarRailTab === 'all' && `Page Content (${getBlocksForItem(activeModalItem).length} Blocks)`}
@@ -1159,6 +1169,9 @@ export default function StudentPortal() {
                             onClick={() => {
                               const el = document.getElementById(`block-view-${blk.id || blkIdx}`);
                               if (el) el.scrollIntoView({ behavior: 'smooth' });
+                              if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                                setMobileDrawerOpen(false);
+                              }
                             }}
                             className={`p-3 rounded-2xl border transition-all cursor-pointer space-y-1 ${
                               completed ? 'border-teal-300 bg-teal-50/50 hover:bg-teal-50' : 'border-gray-200 bg-white hover:bg-gray-50'

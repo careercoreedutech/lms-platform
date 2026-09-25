@@ -168,12 +168,12 @@ export default function EnrollmentModal() {
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden"
+          className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden max-h-[92vh] flex flex-col"
         >
           {/* Top Multi-color Gradient Accent */}
-          <div className="h-2 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16]" />
+          <div className="h-2 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] shrink-0" />
 
-          <div className="p-6 sm:p-8">
+          <div className="p-5 sm:p-8 overflow-y-auto flex-1">
             <div className="flex items-center justify-between pb-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="CareerCore Logo" className="h-7 w-auto" />

@@ -137,7 +137,7 @@ export default function HeroSection() {
             animate={{ y: [0, -8, 0], rotate: [-6, -4, -6] }}
             transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
             whileHover={{ scale: 1.08, rotate: -2, zIndex: 40 }}
-            className="absolute top-2 left-2 sm:left-6 z-20 w-44 sm:w-56 h-32 sm:h-40 bg-[#FA9C16] rounded-3xl p-3 shadow-3d-orange border-2 border-white/60 cursor-pointer flex flex-col justify-between"
+            className="hidden md:flex absolute top-2 left-2 sm:left-6 z-20 w-44 sm:w-56 h-32 sm:h-40 bg-[#FA9C16] rounded-3xl p-3 shadow-3d-orange border-2 border-white/60 cursor-pointer flex-col justify-between"
             onClick={() => setCurveHeight(curveHeight === 14 ? 26 : 14)}
           >
             <div className="w-full h-full bg-[#FA9C16] rounded-2xl border border-white/30 p-2 relative overflow-hidden flex items-center justify-center">
@@ -167,7 +167,7 @@ export default function HeroSection() {
             animate={{ y: [0, 8, 0], rotate: [-2, 1, -2] }}
             transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 0.5 }}
             whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="absolute top-44 left-0 sm:left-10 z-30 bg-[#0A317B] text-white p-3.5 rounded-2xl shadow-3d-navy border-2 border-white/60 cursor-pointer space-y-1.5 w-48"
+            className="hidden lg:block absolute top-44 left-0 sm:left-10 z-30 bg-[#0A317B] text-white p-3.5 rounded-2xl shadow-3d-navy border-2 border-white/60 cursor-pointer space-y-1.5 w-48"
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold tracking-wide">Skill Verification</span>
@@ -192,18 +192,18 @@ export default function HeroSection() {
             animate={{ y: [0, -6, 0] }}
             transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut", delay: 1 }}
             whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="absolute top-80 left-4 sm:left-14 z-30 bg-[#1A9C9B] text-white px-4 py-2.5 rounded-2xl shadow-3d-teal border-2 border-white/60 flex items-center justify-between gap-3 font-extrabold text-xs w-52"
+            className="hidden md:flex absolute top-80 left-4 sm:left-14 z-30 bg-[#1A9C9B] text-white px-4 py-2.5 rounded-2xl shadow-3d-teal border-2 border-white/60 items-center justify-between gap-3 font-extrabold text-xs w-52"
           >
             <button 
               onClick={() => setSkillCount(Math.max(5, skillCount - 1))}
-              className="p-1 hover:bg-black/10 rounded-lg transition-colors"
+              className="p-1 hover:bg-black/10 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4 stroke-[3]" />
             </button>
             <span>{skillCount} Skills Mastered</span>
             <button 
               onClick={() => setSkillCount(skillCount + 1)}
-              className="p-1 hover:bg-black/10 rounded-lg transition-colors"
+              className="p-1 hover:bg-black/10 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
@@ -214,18 +214,18 @@ export default function HeroSection() {
             animate={{ y: [0, 6, 0] }}
             transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 1.5 }}
             whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="absolute bottom-14 left-8 sm:left-20 z-30 bg-[#FA9C16] text-white px-5 py-3 rounded-2xl shadow-3d-orange border-2 border-white/60 flex items-center justify-between gap-4 font-extrabold text-sm w-60"
+            className="hidden md:flex absolute bottom-14 left-8 sm:left-20 z-30 bg-[#FA9C16] text-white px-5 py-3 rounded-2xl shadow-3d-orange border-2 border-white/60 items-center justify-between gap-4 font-extrabold text-sm w-60"
           >
             <button 
               onClick={() => setCourseIndex((courseIndex - 1 + courses.length) % courses.length)}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4 stroke-[3]" />
             </button>
             <span className="tracking-wide text-xs">{currentCourse.name}</span>
             <button 
               onClick={() => setCourseIndex((courseIndex + 1) % courses.length)}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
@@ -235,7 +235,7 @@ export default function HeroSection() {
           <motion.div 
             animate={{ rotate: [-12, -8, -12] }}
             transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="absolute bottom-4 left-4 sm:left-8 z-20 w-12 h-12 bg-[#1A9C9B] rounded-2xl shadow-lg border-2 border-white/60" 
+            className="hidden md:block absolute bottom-4 left-4 sm:left-8 z-20 w-12 h-12 bg-[#1A9C9B] rounded-2xl shadow-lg border-2 border-white/60" 
           />
 
           {/* FLOATING 3D WIDGET 5: Top-Right Teal Course Format Card */}
@@ -243,7 +243,7 @@ export default function HeroSection() {
             animate={{ y: [0, -8, 0], rotate: [6, 4, 6] }}
             transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 0.2 }}
             whileHover={{ scale: 1.08, rotate: 2, zIndex: 40 }}
-            className="absolute top-2 right-12 sm:right-56 z-30 bg-[#1A9C9B] p-3.5 rounded-3xl shadow-3d-teal border-2 border-white/60 w-56 text-white"
+            className="hidden md:block absolute top-2 right-12 sm:right-56 z-30 bg-[#1A9C9B] p-3.5 rounded-3xl shadow-3d-teal border-2 border-white/60 w-56 text-white"
           >
             <span className="text-xs font-extrabold block mb-2 tracking-wide">Learning Mode</span>
             <div className="grid grid-cols-2 gap-1.5 font-bold text-xs">
@@ -266,7 +266,7 @@ export default function HeroSection() {
             animate={{ y: [0, 8, 0], rotate: [4, 2, 4] }}
             transition={{ repeat: Infinity, duration: 6.5, ease: "easeInOut", delay: 0.8 }}
             whileHover={{ scale: 1.05, zIndex: 40 }}
-            className="absolute top-20 right-0 sm:right-2 z-20 w-64 sm:w-72 bg-[#0A317B] text-[#1A9C9B] p-4 rounded-2xl shadow-2xl border-2 border-blue-900/50 font-mono text-[11px] leading-relaxed hidden sm:block"
+            className="absolute top-20 right-0 sm:right-2 z-20 w-64 sm:w-72 bg-[#0A317B] text-[#1A9C9B] p-4 rounded-2xl shadow-2xl border-2 border-blue-900/50 font-mono text-[11px] leading-relaxed hidden lg:block"
           >
             <div className="flex items-center justify-between border-b border-blue-800/60 pb-2 mb-2 text-white">
               <span className="text-[10px] font-bold">student.career.json</span>
@@ -301,7 +301,7 @@ export default function HeroSection() {
             transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 1.2 }}
             whileHover={{ scale: 1.15, zIndex: 40 }}
             onClick={() => setDarkModeActive(!darkModeActive)}
-            className="absolute top-48 right-36 sm:right-64 z-30 bg-[#FA9C16] p-2 rounded-2xl shadow-3d-orange border-2 border-white/60 cursor-pointer flex items-center justify-between w-20"
+            className="hidden md:flex absolute top-48 right-36 sm:right-64 z-30 bg-[#FA9C16] p-2 rounded-2xl shadow-3d-orange border-2 border-white/60 cursor-pointer items-center justify-between w-20"
           >
             <div className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform duration-300 ${darkModeActive ? 'translate-x-9 bg-[#0A317B] text-white' : 'bg-white text-[#0A317B]'}`}>
               {darkModeActive ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -313,7 +313,7 @@ export default function HeroSection() {
             animate={{ y: [0, 6, 0] }}
             transition={{ repeat: Infinity, duration: 5.8, ease: "easeInOut", delay: 0.4 }}
             whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="absolute bottom-12 right-6 sm:right-28 z-30 bg-[#FA9C16] text-white p-3.5 rounded-2xl shadow-3d-orange border-2 border-white/60 w-48"
+            className="hidden lg:block absolute bottom-12 right-6 sm:right-28 z-30 bg-[#FA9C16] text-white p-3.5 rounded-2xl shadow-3d-orange border-2 border-white/60 w-48"
           >
             <span className="text-xs font-extrabold block mb-2 tracking-wide">Certification Mode</span>
             <div className="flex gap-2 text-xs font-bold">

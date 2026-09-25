@@ -3343,7 +3343,7 @@ export default function AdminPanel() {
           </div>
 
           {/* Navigation Links */}
-          <nav className="space-y-1">
+          <nav className="flex md:flex-col overflow-x-auto md:overflow-x-visible space-x-1.5 md:space-x-0 md:space-y-1 pb-1 md:pb-0 scrollbar-none whitespace-nowrap">
             {[
               { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
               { id: 'mentors', label: 'Mentors', icon: Award, count: mentors.length },
@@ -3359,25 +3359,25 @@ export default function AdminPanel() {
                   key={item.id}
                   type="button"
                   onClick={() => setAdminTab(item.id)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                  className={`shrink-0 md:w-full flex items-center justify-between px-3.5 md:px-4 py-2 md:py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                     isActive
                       ? 'bg-[#2563EB] text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                      : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 bg-slate-50 md:bg-transparent'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 md:gap-3">
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                     <span>{item.label}</span>
                   </div>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
                       isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {item.badge}
                     </span>
                   )}
                   {item.badge === undefined && item.count !== undefined && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[10px] font-bold ${
                       isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {item.count}
@@ -3389,8 +3389,8 @@ export default function AdminPanel() {
           </nav>
         </div>
 
-        {/* Bottom Floating Card: "Keep Building" */}
-        <div className="p-4 rounded-2xl bg-[#F0F7FF] border border-blue-100/80 space-y-2 relative overflow-hidden mt-6">
+        {/* Bottom Floating Card: "Keep Building" (Hidden on mobile) */}
+        <div className="hidden md:block p-4 rounded-2xl bg-[#F0F7FF] border border-blue-100/80 space-y-2 relative overflow-hidden mt-6">
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-[#2563EB]">
             <Lightbulb className="w-4 h-4" />
           </div>

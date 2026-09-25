@@ -372,7 +372,7 @@ export default function CourseAdvisorBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25 }}
-            className="fixed bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[580px] h-[550px] bg-white rounded-3xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+            className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[calc(100vh-6rem)] h-[520px] bg-white rounded-3xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
           >
             {/* CHAT HEADER */}
             <div className="p-4 bg-gradient-to-r from-[#0A317B] via-[#0D41A1] to-[#1A9C9B] text-white flex items-center justify-between shrink-0 shadow-md">

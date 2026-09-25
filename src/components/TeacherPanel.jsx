@@ -965,10 +965,10 @@ export default function TeacherPanel() {
         </header>
 
         {/* 3-Column Studio Page Layout */}
-        <form onSubmit={handleSaveCourse} className="w-full flex h-[calc(100vh-65px)] overflow-hidden">
+        <form onSubmit={handleSaveCourse} className="w-full flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-65px)] overflow-y-auto lg:overflow-hidden">
           
           {/* COLUMN 1: LEFT SIDEBAR CURRICULUM TREE */}
-          <div className="w-80 bg-slate-50/70 border-r border-gray-200 flex flex-col shrink-0 h-full">
+          <div className="w-full lg:w-80 bg-slate-50/70 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col shrink-0 max-h-80 lg:max-h-full">
             <div className="p-4 border-b border-gray-200/80 bg-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-teal-50 text-[#1A9C9B]">

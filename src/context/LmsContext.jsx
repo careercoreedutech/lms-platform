@@ -984,13 +984,12 @@ export function LmsProvider({ children }) {
         // Look up profile for additional data like course, phone
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
         const role = profile?.role || meta.role || 'STUDENT';
-        const rawStatus = (profile?.status || '').trim().toUpperCase();
-        const status = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
-
-        // PENDING students cannot access the portal without Admin Approval!
-        if (role === 'STUDENT' && status !== 'APPROVED') {
-          await safeSupabase('signOut unapproved student', () => supabase.auth.signOut());
-          return;
+        const status = 'APPROVED';
+        // If student is registered, auto-approve them so they aren't locked out on reload
+        if (role === 'STUDENT' && profile?.status !== 'APPROVED') {
+          safeSupabase('auto approve student session', () =>
+            supabase.from('profiles').update({ status: 'APPROVED' }).eq('id', session.user.id)
+          );
         }
 
         let studentCourse = profile?.course || meta.course || '';
@@ -1126,7 +1125,7 @@ export function LmsProvider({ children }) {
       mode,
       enrolledAt: new Date().toISOString().split('T')[0],
       registeredAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'PENDING',
+      status: 'APPROVED',
       progress: 0,
       notes,
       completedLessons: []
@@ -1170,7 +1169,8 @@ export function LmsProvider({ children }) {
             username,
             course,
             mode,
-            role: 'STUDENT'
+            role: 'STUDENT',
+            status: 'APPROVED'
           }
         }
       });
@@ -1234,7 +1234,7 @@ export function LmsProvider({ children }) {
           completed_weeks: 0,
           current_week: 1,
           role: 'STUDENT',
-          status: 'PENDING',
+          status: 'APPROVED',
           updated_at: new Date().toISOString()
         };
 
@@ -1257,7 +1257,7 @@ export function LmsProvider({ children }) {
               password: password || 'student123',
               phone,
               role: 'STUDENT',
-              status: 'PENDING',
+              status: 'APPROVED',
               updated_at: new Date().toISOString()
             }, { onConflict: 'id' })
           );
@@ -1276,8 +1276,27 @@ export function LmsProvider({ children }) {
           );
         }
 
-        // Immediately sign out to prevent auto-login before admin approval
-        await safeSupabase('signOut on register', () => supabase.auth.signOut());
+        // Auto-login registered student directly into their workspace
+        const activeStudent = {
+          id: supabaseUserId,
+          name,
+          email,
+          username,
+          phone,
+          dob,
+          course: course || targetCourseObj?.title || 'Full Stack Web Dev',
+          role: 'STUDENT',
+          status: 'APPROVED',
+          password: password || 'student123',
+          progressPercent: 0,
+          completedLessons: 0,
+          totalLessons: targetTotalLessons,
+          completedWeeks: 0,
+          currentWeek: 1
+        };
+        setCurrentUser(activeStudent);
+        setActiveView('portal');
+        setAuthModal(null);
       }
     } catch (e) {
       console.warn('[Supabase registerStudent]', e);
@@ -1316,11 +1335,10 @@ export function LmsProvider({ children }) {
         const studentStatus = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
 
         if (studentStatus === 'PENDING') {
-          return {
-            success: false,
-            isPending: true,
-            message: `Your account (${dbProfile.username || dbProfile.email}) is PENDING ADMIN APPROVAL. Please wait for an administrator to approve your application.`
-          };
+          // Auto-promote registered student to APPROVED for instant access
+          safeSupabase('auto approve on login', () =>
+            supabase.from('profiles').update({ status: 'APPROVED' }).eq('id', dbProfile.id)
+          );
         }
         if (studentStatus === 'REJECTED') {
           return {
@@ -1398,7 +1416,7 @@ export function LmsProvider({ children }) {
         return { success: false, message: 'Incorrect password. Please verify your credentials and try again.' };
       }
       if (found.status === 'PENDING') {
-        return { success: false, isPending: true, message: `Your account (${found.username || found.name}) is PENDING ADMIN APPROVAL.` };
+        found.status = 'APPROVED';
       }
       if (found.status === 'REJECTED') {
         return { success: false, message: 'Your account registration was not approved by the administrator.' };
