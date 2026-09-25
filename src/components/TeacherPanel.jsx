@@ -251,49 +251,6 @@ export default function TeacherPanel() {
   const [collapsedSections, setCollapsedSections] = useState({});
   const [showCourseMetaModal, setShowCourseMetaModal] = useState(false);
   const [addTopicModalSecIdx, setAddTopicModalSecIdx] = useState(null);
-  const [addBlockModalOpen, setAddBlockModalOpen] = useState(false);
-  const [resolvedVideoUrls, setResolvedVideoUrls] = useState({});
-
-  useEffect(() => {
-    if (!courseForm?.sections) return;
-    const pathsToResolve = new Set();
-    courseForm.sections.forEach(sec => {
-      (sec.items || []).forEach(item => {
-        if (item.videoStoragePath) pathsToResolve.add(item.videoStoragePath);
-        if (item.videoUrl && !item.videoUrl.startsWith('blob:')) {
-          pathsToResolve.add(item.videoUrl);
-          const c = extractStoragePath(item.videoUrl);
-          if (c) pathsToResolve.add(c);
-        }
-        (item.blocks || []).forEach(b => {
-          if (b.videoStoragePath) pathsToResolve.add(b.videoStoragePath);
-          if (b.videoUrl && !b.videoUrl.startsWith('blob:')) {
-            pathsToResolve.add(b.videoUrl);
-            const cb = extractStoragePath(b.videoUrl);
-            if (cb) pathsToResolve.add(cb);
-          }
-        });
-      });
-    });
-
-    pathsToResolve.forEach(async (path) => {
-      if (!path) return;
-      try {
-        const signed = await getProtectedVideoUrl(path, 86400);
-        if (signed) {
-          const clean = extractStoragePath(path);
-          setResolvedVideoUrls(prev => ({
-            ...prev,
-            [path]: signed,
-            ...(clean ? { [clean]: signed } : {})
-          }));
-        }
-      } catch (e) {
-        console.warn('Could not resolve signed video URL:', e);
-      }
-    });
-  }, [courseForm.sections]);
-
   // Form State for Create / Edit Course
   const [courseForm, setCourseForm] = useState({
     title: '',
@@ -362,6 +319,48 @@ export default function TeacherPanel() {
       }
     ]
   });
+
+  const [resolvedVideoUrls, setResolvedVideoUrls] = useState({});
+
+  useEffect(() => {
+    if (!courseForm?.sections) return;
+    const pathsToResolve = new Set();
+    courseForm.sections.forEach(sec => {
+      (sec.items || []).forEach(item => {
+        if (item.videoStoragePath) pathsToResolve.add(item.videoStoragePath);
+        if (item.videoUrl && !item.videoUrl.startsWith('blob:')) {
+          pathsToResolve.add(item.videoUrl);
+          const c = extractStoragePath(item.videoUrl);
+          if (c) pathsToResolve.add(c);
+        }
+        (item.blocks || []).forEach(b => {
+          if (b.videoStoragePath) pathsToResolve.add(b.videoStoragePath);
+          if (b.videoUrl && !b.videoUrl.startsWith('blob:')) {
+            pathsToResolve.add(b.videoUrl);
+            const cb = extractStoragePath(b.videoUrl);
+            if (cb) pathsToResolve.add(cb);
+          }
+        });
+      });
+    });
+
+    pathsToResolve.forEach(async (path) => {
+      if (!path) return;
+      try {
+        const signed = await getProtectedVideoUrl(path, 86400);
+        if (signed) {
+          const clean = extractStoragePath(path);
+          setResolvedVideoUrls(prev => ({
+            ...prev,
+            [path]: signed,
+            ...(clean ? { [clean]: signed } : {})
+          }));
+        }
+      } catch (e) {
+        console.warn('Could not resolve signed video URL:', e);
+      }
+    });
+  }, [courseForm.sections]);
 
   // Multi-Block Canvas Helpers
   const getBlocksForItem = (item) => {
