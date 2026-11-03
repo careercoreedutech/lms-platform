@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Mail, Phone, Lock, BookOpen, CheckCircle2, Clock, ShieldCheck, ArrowRight, Calendar, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, BookOpen, CheckCircle2, Clock, ArrowRight, AlertCircle, Eye, EyeOff, AtSign, GraduationCap } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import { MIN_STUDENT_AGE } from '../config/site';
+import { validateName, validateUsername, validateEmail, validatePassword, validateDob } from '../lib/validation';
+import Modal, { Field, inputClass } from './ui/Modal';
 
 // Helper to sanitize phone numbers:
 // - Disallows '+' symbol and prevents typing or pasting it
@@ -46,7 +48,7 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-const maxYear = currentYear - 10; // e.g. 2016 for students
+const maxYear = currentYear - MIN_STUDENT_AGE; // youngest allowed birth year
 const minYear = 1950;
 const YEARS = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
 
@@ -66,83 +68,112 @@ const getDaysInMonth = (monthVal, yearVal) => {
   return 31;
 };
 
+
+const FIELD_ORDER = ['name', 'username', 'email', 'phone', 'dob', 'password'];
+
+const emptyForm = (course) => ({
+  name: '',
+  username: '',
+  email: '',
+  phone: '',
+  dobMonth: '',
+  dobDate: '',
+  dobYear: '',
+  password: '',
+  course,
+});
+
 export default function EnrollmentModal() {
   const { authModal, setAuthModal, registerStudent, courses, selectedEnrollCourse } = useLms();
+  const open = authModal === 'enroll';
+  const defaultCourse = selectedEnrollCourse || courses[0]?.title || 'Full Stack Web Dev';
 
-  const [formData, setFormData] = useState({
-    name: '',
-    username: '',
-    email: '',
-    phone: '',
-    dobMonth: '',
-    dobDate: '',
-    dobYear: '',
-    password: '',
-    course: selectedEnrollCourse || courses[0]?.title || 'Full Stack Web Dev'
-  });
-
-  useEffect(() => {
-    if (authModal === 'enroll') {
-      setFormData({
-        name: '',
-        username: '',
-        email: '',
-        phone: '',
-        dobMonth: '',
-        dobDate: '',
-        dobYear: '',
-        password: '',
-        course: selectedEnrollCourse || courses[0]?.title || 'Full Stack Web Dev'
-      });
-      setStatusMessage(null);
-      setErrorMsg(null);
-    }
-  }, [selectedEnrollCourse, authModal]);
-
+  const [formData, setFormData] = useState(() => emptyForm(defaultCourse));
+  const [errors, setErrors] = useState({});
   const [statusMessage, setStatusMessage] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  if (authModal !== 'enroll') return null;
+  useEffect(() => {
+    if (open) {
+      setFormData(emptyForm(defaultCourse));
+      setErrors({});
+      setStatusMessage(null);
+      setErrorMsg(null);
+      setShowPassword(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEnrollCourse, open]);
 
   const purePhone = sanitizePhoneNumber(formData.phone);
-  const isPhoneComplete = purePhone.length === 10;
-  const isPhoneValid = isPhoneComplete && /^[6-9]/.test(purePhone);
+  const isPhoneValid = purePhone.length === 10 && /^[6-9]/.test(purePhone);
+
+  const validators = {
+    name: () => validateName(formData.name),
+    username: () => validateUsername(formData.username),
+    email: () => validateEmail(formData.email),
+    phone: () => {
+      if (!purePhone) return 'Please enter your mobile number.';
+      if (purePhone.length !== 10) return `Mobile number must be 10 digits (${purePhone.length}/10).`;
+      if (!/^[6-9]/.test(purePhone)) return 'Indian mobile numbers start with 6, 7, 8 or 9.';
+      return null;
+    },
+    dob: () => validateDob(formData.dobYear, formData.dobMonth, formData.dobDate),
+    password: () => validatePassword(formData.password),
+  };
+
+  const validateAll = () => {
+    const errs = {};
+    FIELD_ORDER.forEach((k) => {
+      const msg = validators[k]();
+      if (msg) errs[k] = msg;
+    });
+    return errs;
+  };
+
+  // Re-validate a field on blur, and clear its error while the user fixes it
+  const blur = (k) => () => {
+    if (!formData[k] && k !== 'dob') return;
+    setErrors((prev) => ({ ...prev, [k]: validators[k]() || undefined }));
+  };
+  const update = (patch, key) => {
+    setFormData((f) => ({ ...f, ...patch }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  // DOB errors show as soon as all three parts are chosen
+  useEffect(() => {
+    if (formData.dobYear && formData.dobMonth && formData.dobDate) {
+      setErrors((prev) => ({ ...prev, dob: validators.dob() || undefined }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.dobYear, formData.dobMonth, formData.dobDate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.username || !formData.email || !formData.phone || !formData.password) {
-      setErrorMsg('Please fill in all required fields.');
+    const errs = validateAll();
+    setErrors(errs);
+    const firstBad = FIELD_ORDER.find((k) => errs[k]);
+    if (firstBad) {
+      setErrorMsg(null);
+      document.getElementById(`enroll-${firstBad === 'dob' ? 'dob-month' : firstBad}`)?.focus();
       return;
     }
 
-    // Phone validation
-    if (!isPhoneValid) {
-      if (purePhone.length !== 10) {
-        setErrorMsg(`Mobile number must be exactly 10 digits (currently ${purePhone.length} digits).`);
-      } else {
-        setErrorMsg('Invalid mobile number. Indian mobile numbers must start with 6, 7, 8, or 9.');
-      }
-      return;
-    }
-
-    // DOB validation
-    if (!formData.dobMonth || !formData.dobDate || !formData.dobYear) {
-      setErrorMsg('Please select your complete Date of Birth (Month, Date, and Year).');
-      return;
-    }
-
-    const monthObj = MONTHS.find(m => m.value === formData.dobMonth);
+    const monthObj = MONTHS.find((m) => m.value === formData.dobMonth);
     const formattedDob = `${String(formData.dobDate).padStart(2, '0')} ${monthObj?.name || formData.dobMonth} ${formData.dobYear}`;
 
     setSubmitting(true);
     setErrorMsg(null);
-
     try {
       const res = await registerStudent({
         ...formData,
+        name: formData.name.trim().replace(/\s+/g, ' '),
+        username: formData.username.trim(),
+        email: formData.email.trim(),
         phone: purePhone,
-        dob: formattedDob
+        dob: formattedDob,
       });
       if (res && res.success) {
         setStatusMessage(res.message);
@@ -156,372 +187,249 @@ export default function EnrollmentModal() {
     }
   };
 
-  const coursesList = Array.from(new Set([
-    ...(formData.course ? [formData.course] : []),
-    ...courses.map(c => c.title)
-  ]));
+  const coursesList = Array.from(new Set([...(formData.course ? [formData.course] : []), ...courses.map((c) => c.title)]));
+  const dobComplete = formData.dobMonth && formData.dobDate && formData.dobYear;
+  const dobLabel = dobComplete
+    ? `${String(formData.dobDate).padStart(2, '0')} ${MONTHS.find((m) => m.value === formData.dobMonth)?.name} ${formData.dobYear}`
+    : '';
+  const selectClass = (bad) => `${inputClass(bad)} px-3 cursor-pointer`;
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden max-h-[92vh] flex flex-col"
-        >
-          {/* Top Multi-color Gradient Accent */}
-          <div className="h-2 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] shrink-0" />
-
-          <div className="p-5 sm:p-8 overflow-y-auto flex-1">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="CareerCore Logo" className="h-7 w-auto" />
-                <div>
-                  <h3 className="text-lg font-extrabold text-[#0A317B]">Student Registration</h3>
-                  <p className="text-xs text-gray-500">Create an account to enroll in CareerCore Edutech</p>
-                </div>
+    <Modal
+      open={open}
+      onClose={() => setAuthModal(null)}
+      title={statusMessage ? 'Application submitted' : 'Student registration'}
+      subtitle={statusMessage ? 'We’ll notify you once your account is approved.' : 'Create your account to enroll in a CareerCore program.'}
+      icon={<GraduationCap className="w-5 h-5" />}
+      maxWidth="max-w-xl"
+      labelledBy="enroll-title"
+    >
+      {statusMessage ? (
+        <div className="text-center space-y-4" role="status">
+          <div className="w-14 h-14 rounded-full bg-amber-50 text-brand-orange flex items-center justify-center mx-auto ring-8 ring-amber-50/60">
+            <Clock className="w-7 h-7" />
+          </div>
+          <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
+            {statusMessage}
+          </div>
+          <dl className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-left space-y-1.5 text-xs text-slate-600">
+            {[
+              ['Applicant', formData.name],
+              ['Date of birth', dobLabel],
+              ['Phone / WhatsApp', `+91 ${purePhone}`],
+              ['Email', formData.email],
+              ['Program', formData.course],
+              ['Status', 'Pending admin approval'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4">
+                <dt>{k}</dt>
+                <dd className={`font-bold text-right ${k === 'Status' ? 'text-brand-orange' : 'text-brand-navy'}`}>{v}</dd>
               </div>
-              <button 
-                onClick={() => setAuthModal(null)}
-                className="p-1.5 rounded-full text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            ))}
+          </dl>
+          <button type="button" onClick={() => setAuthModal('login')} className="btn-navy w-full justify-center py-3">
+            <span>Go to student login</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} noValidate autoComplete="off" className="space-y-4">
+          {errorMsg && (
+            <div role="alert" className="flex gap-2 p-3 rounded-xl bg-red-50 text-red-700 text-xs font-semibold border border-red-200">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <p>{errorMsg}</p>
+            </div>
+          )}
+
+          <Field label="Program" htmlFor="enroll-course">
+            <div className="relative">
+              <BookOpen className="w-4 h-4 text-brand-teal absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                id="enroll-course"
+                value={formData.course}
+                onChange={(e) => update({ course: e.target.value }, 'course')}
+                className={`${inputClass(false)} pl-10 pr-3 font-bold text-brand-navy cursor-pointer`}
               >
-                <X className="w-5 h-5" />
+                {coursesList.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </Field>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Full name" required htmlFor="enroll-name" error={errors.name}>
+              <div className="relative">
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="enroll-name" type="text" name="student_fullname" autoComplete="name"
+                  value={formData.name}
+                  onChange={(e) => update({ name: e.target.value }, 'name')}
+                  onBlur={blur('name')}
+                  placeholder="As on your ID"
+                  aria-invalid={!!errors.name} aria-describedby={errors.name ? 'enroll-name-error' : undefined}
+                  className={`${inputClass(errors.name)} pl-10 pr-3.5`}
+                />
+              </div>
+            </Field>
+
+            <Field label="Username" required htmlFor="enroll-username" error={errors.username}>
+              <div className="relative">
+                <AtSign className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="enroll-username" type="text" name="new_student_username" autoComplete="off"
+                  value={formData.username}
+                  onChange={(e) => update({ username: e.target.value.replace(/\s/g, '') }, 'username')}
+                  onBlur={blur('username')}
+                  placeholder="e.g. priya_codes"
+                  aria-invalid={!!errors.username} aria-describedby={errors.username ? 'enroll-username-error' : undefined}
+                  className={`${inputClass(errors.username)} pl-10 pr-3.5`}
+                />
+              </div>
+            </Field>
+          </div>
+
+          <Field label="Email address" required htmlFor="enroll-email" error={errors.email}>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                id="enroll-email" type="email" name="student_email" autoComplete="email"
+                value={formData.email}
+                onChange={(e) => update({ email: e.target.value }, 'email')}
+                onBlur={blur('email')}
+                placeholder="name@example.com"
+                aria-invalid={!!errors.email} aria-describedby={errors.email ? 'enroll-email-error' : undefined}
+                className={`${inputClass(errors.email)} pl-10 pr-3.5`}
+              />
+            </div>
+          </Field>
+
+          <Field
+            label="Mobile number"
+            required
+            htmlFor="enroll-phone"
+            error={errors.phone}
+            right={formData.phone ? (
+              <span className={`text-[11px] font-bold flex items-center gap-1 ${isPhoneValid ? 'text-emerald-600' : 'text-slate-400'}`}>
+                {isPhoneValid ? (<><CheckCircle2 className="w-3.5 h-3.5" /> Valid</>) : `${purePhone.length}/10`}
+              </span>
+            ) : null}
+          >
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-slate-400 pointer-events-none">+91</span>
+              <input
+                id="enroll-phone" type="tel" inputMode="numeric" name="student_phone" autoComplete="tel-national"
+                value={formData.phone}
+                onChange={(e) => update({ phone: sanitizePhoneNumber(e.target.value) }, 'phone')}
+                onKeyDown={(e) => { if (['+', '-', '.', 'e', 'E'].includes(e.key)) e.preventDefault(); }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  update({ phone: sanitizePhoneNumber(e.clipboardData?.getData('text') || '') }, 'phone');
+                }}
+                onBlur={blur('phone')}
+                placeholder="10-digit mobile number"
+                maxLength={10}
+                aria-invalid={!!errors.phone} aria-describedby={errors.phone ? 'enroll-phone-error' : undefined}
+                className={`${inputClass(errors.phone)} pl-12 pr-3.5`}
+              />
+            </div>
+          </Field>
+
+          <Field
+            label="Date of birth"
+            required
+            htmlFor="enroll-dob-month"
+            error={errors.dob}
+            hint={`You must be at least ${MIN_STUDENT_AGE} years old.`}
+            right={dobComplete && !errors.dob ? (
+              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {dobLabel}
+              </span>
+            ) : null}
+          >
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label="Date of birth">
+              <select
+                id="enroll-dob-month" aria-label="Month" value={formData.dobMonth}
+                aria-invalid={!!errors.dob}
+                onChange={(e) => {
+                  const newMonth = e.target.value;
+                  const maxDays = getDaysInMonth(newMonth, formData.dobYear);
+                  update({ dobMonth: newMonth, dobDate: formData.dobDate && parseInt(formData.dobDate, 10) > maxDays ? String(maxDays) : formData.dobDate }, 'dob');
+                }}
+                className={selectClass(errors.dob)}
+              >
+                <option value="" disabled>Month</option>
+                {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.name}</option>)}
+              </select>
+              <select
+                aria-label="Day" value={formData.dobDate} aria-invalid={!!errors.dob}
+                onChange={(e) => update({ dobDate: e.target.value }, 'dob')}
+                className={selectClass(errors.dob)}
+              >
+                <option value="" disabled>Day</option>
+                {Array.from({ length: getDaysInMonth(formData.dobMonth, formData.dobYear) }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>{i + 1}</option>
+                ))}
+              </select>
+              <select
+                aria-label="Year" value={formData.dobYear} aria-invalid={!!errors.dob}
+                onChange={(e) => {
+                  const newYear = e.target.value;
+                  const maxDays = getDaysInMonth(formData.dobMonth, newYear);
+                  update({ dobYear: newYear, dobDate: formData.dobDate && parseInt(formData.dobDate, 10) > maxDays ? String(maxDays) : formData.dobDate }, 'dob');
+                }}
+                className={selectClass(errors.dob)}
+              >
+                <option value="" disabled>Year</option>
+                {YEARS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+              </select>
+            </div>
+          </Field>
+
+          <Field label="Create password" required htmlFor="enroll-password" error={errors.password} hint="At least 8 characters, with a letter and a number.">
+            <div className="relative">
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                id="enroll-password" type={showPassword ? 'text' : 'password'} name="new_student_password" autoComplete="new-password"
+                value={formData.password}
+                onChange={(e) => update({ password: e.target.value }, 'password')}
+                onBlur={blur('password')}
+                placeholder="Create a strong password"
+                aria-invalid={!!errors.password} aria-describedby={errors.password ? 'enroll-password-error' : undefined}
+                className={`${inputClass(errors.password)} pl-10 pr-11`}
+              />
+              <button
+                type="button" onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-brand-navy hover:bg-slate-100 cursor-pointer"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </Field>
 
-            {statusMessage ? (
-              <div className="py-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-amber-50 text-[#FA9C16] flex items-center justify-center mx-auto border border-[#FA9C16]/30 shadow-inner">
-                  <Clock className="w-8 h-8 animate-pulse" />
-                </div>
-                
-                <h4 className="text-xl font-extrabold text-[#0A317B]">Registration Received!</h4>
-                
-                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 leading-relaxed font-medium">
-                  {statusMessage}
-                </div>
+          <p className="text-[11px] text-slate-400"><span className="text-red-500">*</span> Required fields</p>
 
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-left space-y-1 text-xs text-gray-600 font-mono">
-                  <div className="flex justify-between"><span>Applicant:</span><span className="font-bold text-[#0A317B]">{formData.name}</span></div>
-                  {formData.dobMonth && formData.dobDate && formData.dobYear && (
-                    <div className="flex justify-between">
-                      <span>Date of Birth:</span>
-                      <span className="font-bold text-blue-700">
-                        {String(formData.dobDate).padStart(2, '0')} {MONTHS.find(m => m.value === formData.dobMonth)?.name || formData.dobMonth} {formData.dobYear}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between"><span>Phone / WhatsApp:</span><span className="font-bold text-emerald-700">+91 {purePhone || formData.phone}</span></div>
-                  <div className="flex justify-between"><span>Email:</span><span className="font-bold text-slate-700">{formData.email}</span></div>
-                  <div className="flex justify-between"><span>Selected Course:</span><span className="font-bold text-[#1A9C9B]">{formData.course}</span></div>
-                  <div className="flex justify-between"><span>Status:</span><span className="font-bold text-[#FA9C16]">PENDING ADMIN APPROVAL</span></div>
-                </div>
-
-                <button
-                  onClick={() => setAuthModal('login')}
-                  className="w-full py-3 rounded-xl bg-[#0A317B] text-white font-extrabold text-xs shadow-md hover:bg-[#061e4f] transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Go to Student Login</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+          <button type="submit" disabled={submitting} className="btn-primary w-full justify-center py-3.5">
+            {submitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Submitting application…</span>
+              </>
             ) : (
-              <form onSubmit={handleSubmit} autoComplete="off" className="mt-6 space-y-4">
-                
-                {errorMsg && (
-                  <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-bold border border-red-200">
-                    {errorMsg}
-                  </div>
-                )}
-
-                {/* Full Name */}
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Full Name</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      name="student_fullname"
-                      value={formData.name}
-                      onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Enter your full name"
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Username */}
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Username</label>
-                  <div className="relative">
-                    <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      name="new_student_username"
-                      autoComplete="off"
-                      value={formData.username}
-                      onChange={e => setFormData({ ...formData, username: e.target.value })}
-                      placeholder="Choose a username"
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Email Address */}
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <input
-                      type="email"
-                      name="student_email"
-                      autoComplete="off"
-                      value={formData.email}
-                      onChange={e => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="Enter your email address"
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Phone Number */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-[#1A9C9B]" />
-                      <span>Mobile Number (10 Digits)</span>
-                      <span className="text-red-500">*</span>
-                    </label>
-                    {formData.phone && (
-                      <span className={`text-[11px] font-bold flex items-center gap-1 ${
-                        isPhoneValid ? 'text-emerald-600' : 'text-amber-600'
-                      }`}>
-                        {isPhoneValid ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                            <span>Valid Mobile</span>
-                          </>
-                        ) : (
-                          <span>{purePhone.length}/10 digits</span>
-                        )}
-                      </span>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <div className="absolute left-3 top-2.5 flex items-center gap-1 text-gray-500 text-xs font-bold pointer-events-none">
-                      <span>+91</span>
-                      <span className="text-gray-300">|</span>
-                    </div>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      name="student_phone"
-                      autoComplete="tel"
-                      value={formData.phone}
-                      onChange={(e) => {
-                        const sanitized = sanitizePhoneNumber(e.target.value);
-                        setFormData({ ...formData, phone: sanitized });
-                      }}
-                      onKeyDown={(e) => {
-                        // Prevent typing '+' or other non-numeric symbols
-                        if (['+', '-', '.', 'e', 'E'].includes(e.key)) {
-                          e.preventDefault();
-                        }
-                      }}
-                      onPaste={(e) => {
-                        e.preventDefault();
-                        const pasteData = e.clipboardData?.getData('text') || '';
-                        const sanitized = sanitizePhoneNumber(pasteData);
-                        setFormData({ ...formData, phone: sanitized });
-                      }}
-                      placeholder="8341876728"
-                      maxLength={10}
-                      className={`w-full pl-14 pr-4 py-2.5 rounded-xl border ${
-                        formData.phone && !isPhoneValid ? 'border-amber-400 bg-amber-50/20 focus:ring-amber-400' : 'border-gray-300 focus:ring-[#1A9C9B]'
-                      } focus:ring-2 focus:outline-none text-xs font-medium`}
-                      required
-                    />
-                  </div>
-                  {formData.phone && !isPhoneValid && (
-                    <p className="text-[11px] text-amber-600 mt-1 font-medium flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 text-amber-500 shrink-0" />
-                      {purePhone.length === 10 && !/^[6-9]/.test(purePhone) ? (
-                        'Mobile number must start with 6, 7, 8, or 9'
-                      ) : purePhone.length < 10 ? (
-                        `Enter 10-digit mobile number (${10 - purePhone.length} more digits needed)`
-                      ) : (
-                        'Mobile number must be exactly 10 digits'
-                      )}
-                    </p>
-                  )}
-                </div>
-
-                {/* Date of Birth (DOB) - 3 Dropdowns (Month, Date, Year) */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-gray-700 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-[#1A9C9B]" />
-                      <span>Date of Birth (DOB)</span>
-                      <span className="text-red-500">*</span>
-                    </label>
-                    {formData.dobMonth && formData.dobDate && formData.dobYear && (
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{String(formData.dobDate).padStart(2, '0')} {MONTHS.find(m => m.value === formData.dobMonth)?.name} {formData.dobYear}</span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Month Dropdown */}
-                    <div>
-                      <select
-                        value={formData.dobMonth}
-                        onChange={(e) => {
-                          const newMonth = e.target.value;
-                          const maxDays = getDaysInMonth(newMonth, formData.dobYear);
-                          setFormData(prev => ({
-                            ...prev,
-                            dobMonth: newMonth,
-                            dobDate: prev.dobDate && parseInt(prev.dobDate, 10) > maxDays ? String(maxDays) : prev.dobDate
-                          }));
-                        }}
-                        className="w-full px-2.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-semibold text-gray-800 bg-white cursor-pointer"
-                        required
-                      >
-                        <option value="" disabled>Month</option>
-                        {MONTHS.map(m => (
-                          <option key={m.value} value={m.value}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Date Dropdown */}
-                    <div>
-                      <select
-                        value={formData.dobDate}
-                        onChange={(e) => setFormData(prev => ({ ...prev, dobDate: e.target.value }))}
-                        className="w-full px-2.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-semibold text-gray-800 bg-white cursor-pointer"
-                        required
-                      >
-                        <option value="" disabled>Date</option>
-                        {Array.from({ length: getDaysInMonth(formData.dobMonth, formData.dobYear) }, (_, i) => {
-                          const day = i + 1;
-                          return (
-                            <option key={day} value={String(day)}>
-                              {day}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
-
-                    {/* Year Dropdown */}
-                    <div>
-                      <select
-                        value={formData.dobYear}
-                        onChange={(e) => {
-                          const newYear = e.target.value;
-                          const maxDays = getDaysInMonth(formData.dobMonth, newYear);
-                          setFormData(prev => ({
-                            ...prev,
-                            dobYear: newYear,
-                            dobDate: prev.dobDate && parseInt(prev.dobDate, 10) > maxDays ? String(maxDays) : prev.dobDate
-                          }));
-                        }}
-                        className="w-full px-2.5 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-semibold text-gray-800 bg-white cursor-pointer"
-                        required
-                      >
-                        <option value="" disabled>Year</option>
-                        {YEARS.map(y => (
-                          <option key={y} value={String(y)}>
-                            {y}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Create Password</label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <input
-                      type="password"
-                      name="new_student_password"
-                      autoComplete="new-password"
-                      value={formData.password}
-                      onChange={e => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="••••••••"
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Course Selection */}
-                <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Select Course Program</label>
-                  <div className="relative">
-                    <BookOpen className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                    <select
-                      value={formData.course}
-                      onChange={e => setFormData({ ...formData, course: e.target.value })}
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-bold text-[#0A317B] bg-white cursor-pointer"
-                    >
-                      {coursesList.map((c, i) => (
-                        <option key={i} value={c}>{c}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-3.5 rounded-xl bg-[#FA9C16] hover:bg-[#e0890f] disabled:opacity-60 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    {submitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Submitting Application...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Submit Account Application</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="text-center pt-2 text-xs text-gray-500">
-                  Already registered?{' '}
-                  <button 
-                    type="button"
-                    onClick={() => setAuthModal('login')} 
-                    className="text-[#0A317B] font-bold hover:underline cursor-pointer"
-                  >
-                    Student Login
-                  </button>
-                </div>
-
-              </form>
+              <>
+                <span>Submit application</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
             )}
+          </button>
 
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+          <p className="text-center text-xs text-slate-500">
+            Already registered?{' '}
+            <button type="button" onClick={() => setAuthModal('login')} className="text-brand-navy font-bold hover:underline cursor-pointer">
+              Student login
+            </button>
+          </p>
+        </form>
+      )}
+    </Modal>
   );
 }

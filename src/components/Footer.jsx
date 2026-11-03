@@ -1,196 +1,189 @@
 import React, { useState } from 'react';
-import { Instagram, Facebook, Twitter, Linkedin, Heart, ArrowUp, Send, CheckCircle2, Phone } from 'lucide-react';
+import { Instagram, Facebook, Twitter, Linkedin, ArrowUp, Send, CheckCircle2, Phone, Loader2, MessageCircle } from 'lucide-react';
+import { useLms } from '../context/LmsContext';
+import { SITE, slugify } from '../config/site';
+import { isValidEmail } from '../lib/validation';
+import { subscribeNewsletter } from '../lib/leads';
+import { FOOTER_SECTIONS } from '../content/pages';
+
+const NEWSLETTER_KEY = 'careercore_newsletter_email';
+
+function Newsletter() {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [subscribedAs, setSubscribedAs] = useState(() => {
+    try { return localStorage.getItem(NEWSLETTER_KEY) || ''; } catch { return ''; }
+  });
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const clean = email.trim();
+    if (!isValidEmail(clean)) {
+      setError('Enter a valid email address (e.g. name@example.com).');
+      return;
+    }
+    setError('');
+    setSending(true);
+    const res = await subscribeNewsletter(clean, 'footer');
+    setSending(false);
+    if (res.success) {
+      try { localStorage.setItem(NEWSLETTER_KEY, clean); } catch {}
+      setSubscribedAs(clean);
+      setEmail('');
+    } else {
+      setError(res.message);
+    }
+  };
+
+  return (
+    <div className="relative mb-14 p-6 sm:p-10 rounded-3xl overflow-hidden bg-gradient-to-br from-brand-navy via-[#0B2A6B] to-brand-teal flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div aria-hidden className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-brand-orange/20 blur-3xl" />
+      <div className="relative max-w-lg">
+        <h4 className="text-xl font-black text-white">Free learning resources &amp; tech roadmaps, weekly</h4>
+        <p className="text-sm text-white/70 mt-1">DSA cheat sheets, interview tips and career advice from our mentors. No spam — unsubscribe anytime.</p>
+      </div>
+
+      {subscribedAs ? (
+        <div role="status" className="relative flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/10 ring-1 ring-white/20 text-sm text-white">
+          <CheckCircle2 className="w-5 h-5 text-emerald-300 shrink-0" />
+          <span>
+            You’re subscribed as <b>{subscribedAs}</b>.{' '}
+            <button
+              type="button"
+              className="underline font-semibold cursor-pointer"
+              onClick={() => { try { localStorage.removeItem(NEWSLETTER_KEY); } catch {} setSubscribedAs(''); }}
+            >
+              Use another email
+            </button>
+          </span>
+        </div>
+      ) : (
+        <form onSubmit={onSubmit} noValidate className="relative w-full lg:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <label htmlFor="newsletter-email" className="sr-only">Email address</label>
+            <input
+              id="newsletter-email"
+              type="email"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); if (error) setError(''); }}
+              placeholder="you@example.com"
+              autoComplete="email"
+              aria-invalid={!!error}
+              aria-describedby={error ? 'newsletter-error' : undefined}
+              className={`px-4 py-3 rounded-xl border text-sm w-full lg:w-72 bg-white focus:outline-none focus:ring-4 ${
+                error ? 'border-red-400 focus:ring-red-200/40' : 'border-white/20 focus:ring-white/20 focus:border-white/60'
+              }`}
+            />
+            <button type="submit" disabled={sending} className="btn-primary justify-center shrink-0">
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              <span>{sending ? 'Subscribing…' : 'Subscribe'}</span>
+            </button>
+          </div>
+          {error && <p id="newsletter-error" role="alert" className="mt-2 text-xs font-semibold text-red-200">{error}</p>}
+        </form>
+      )}
+    </div>
+  );
+}
 
 export default function Footer() {
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const { courses = [], navigate, openCounseling } = useLms();
 
-  const handleSubscribe = (e) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setTimeout(() => setSubscribed(false), 4000);
-      setEmail('');
-    }
-  };
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const footerSections = [
+  const sections = [
     {
       title: 'Programs',
-      links: ['Full Stack Development', 'AI & Data Science', 'Cloud & DevOps Track', 'UI/UX Product Design', 'System Design Bootcamp', 'Corporate Upskilling']
+      links: courses.slice(0, 6).map((c) => ({ label: c.title, to: `/courses/${slugify(c.title)}` })),
     },
-    {
-      title: 'Resources',
-      links: ['Career Reports', 'Student Projects Hub', 'Free Coding Workshops', 'Interview Cheat Sheets', 'Syllabus Download', 'Alumni Network']
+    ...FOOTER_SECTIONS,
+  ];
+
+  const linkProps = (to) => ({
+    href: to,
+    onClick: (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      navigate(to);
     },
-    {
-      title: 'Company',
-      links: ['About CareerCore', 'Our Mission & Vision', 'Careers (Hiring Mentors)', 'Press & Media', 'Community Events', 'Contact Counseling']
-    },
-    {
-      title: 'Legal & Policy',
-      links: ['Privacy Policy', 'Terms & Conditions', 'Tuition Refund Policy', 'ISA Terms', 'Career Support SLA']
-    }
+  });
+
+  const socials = [
+    { href: SITE.social.instagram, label: 'Instagram', Icon: Instagram, hover: 'hover:bg-[#E1306C]' },
+    { href: SITE.social.x, label: 'X (Twitter)', Icon: Twitter, hover: 'hover:bg-black' },
+    { href: SITE.social.facebook, label: 'Facebook', Icon: Facebook, hover: 'hover:bg-[#1877F2]' },
+    { href: SITE.social.linkedin, label: 'LinkedIn', Icon: Linkedin, hover: 'hover:bg-[#0A66C2]' },
   ];
 
   return (
-    <footer className="bg-white text-gray-600 text-xs border-t border-gray-200 pt-16 pb-12 relative">
-      {/* Top Multi-color Accent Line */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16]" />
+    <footer className="bg-[#050B1F] text-slate-400 text-sm pt-16 pb-28 sm:pb-12 relative overflow-hidden" data-site-footer>
+      <div aria-hidden className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[400px] rounded-full bg-[radial-gradient(closest-side,rgba(26,156,155,0.15),transparent)] pointer-events-none" />
+      
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <Newsletter />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Newsletter Banner Box */}
-        <div className="mb-14 p-6 sm:p-8 rounded-3xl bg-gray-50 border border-gray-200/80 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xs">
-          <div>
-            <h4 className="text-base font-extrabold text-[#0A317B]">
-              Stay updated with free learning resources & tech roadmaps
-            </h4>
-            <p className="text-xs text-gray-500 mt-1">
-              Join 100,000+ subscribers receiving weekly DSA cheatsheets & career advice.
-            </p>
-          </div>
-
-          <form onSubmit={handleSubscribe} className="flex items-center gap-2 w-full md:w-auto">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email..."
-              className="px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#1A9C9B] text-xs w-full md:w-64 bg-white"
-              required
-            />
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#0A317B] hover:bg-[#061e4f] text-white font-extrabold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
-            >
-              {subscribed ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-[#1A9C9B]" />
-                  <span>Subscribed!</span>
-                </>
-              ) : (
-                <>
-                  <span>Subscribe</span>
-                  <Send className="w-3.5 h-3.5" />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Top Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-gray-200">
-          
-          <div className="col-span-2 space-y-4">
-            <a href="#" className="flex items-center gap-3">
-              <img src="/logo.png" alt="CareerCore Edutech Logo" className="h-9 w-auto object-contain" />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-x-8 gap-y-10 pb-12 border-b border-white/10">
+          <div className="col-span-2 md:col-span-4 lg:col-span-2 space-y-4">
+            <a {...linkProps('/')} className="inline-flex" aria-label="CareerCore Edutech home">
+              <img src="/logo-light.png" alt="CareerCore Edutech" className="h-6 w-auto my-1.5" />
             </a>
-
-            <p className="text-gray-500 text-xs max-w-sm leading-relaxed">
+            <p className="text-slate-400 text-[13px] max-w-sm leading-relaxed">
               CareerCore Edutech empowers students and working professionals to master industry-ready tech skills, build production projects, and achieve career breakthroughs.
             </p>
-
-            <div className="pt-1 flex items-center gap-2 text-xs font-bold text-[#0A317B]">
-              <a 
-                href="tel:+918341876728"
-                className="flex items-center gap-2 hover:text-[#1A9C9B] transition-colors"
-              >
-                <Phone className="w-3.5 h-3.5 text-[#FA9C16]" />
-                <span>+91 83418 76728</span>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-bold text-white">
+              <a href={SITE.phoneHref} className="flex items-center gap-2 hover:text-brand-teal">
+                <Phone className="w-3.5 h-3.5 text-brand-orange" /> {SITE.phoneDisplay}
               </a>
+              <button onClick={() => openCounseling()} className="flex items-center gap-2 hover:text-brand-teal cursor-pointer">
+                <MessageCircle className="w-3.5 h-3.5 text-brand-orange" /> Book free counseling
+              </button>
             </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href="https://www.instagram.com/careercore_edutech/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="p-2 rounded-xl bg-gray-100 hover:bg-[#E1306C] hover:text-white text-gray-700 transition-colors"
-                title="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a
-                href="https://x.com/CareerCore_Edu"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="X (formerly Twitter)"
-                className="p-2 rounded-xl bg-gray-100 hover:bg-black hover:text-white text-gray-700 transition-colors"
-                title="X (Twitter)"
-              >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.facebook.com/people/CareerCore-Edutech/61594042732296/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="p-2 rounded-xl bg-gray-100 hover:bg-[#1877F2] hover:text-white text-gray-700 transition-colors"
-                title="Facebook"
-              >
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a
-                href="https://www.linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-                className="p-2 rounded-xl bg-gray-100 hover:bg-[#0A66C2] hover:text-white text-gray-700 transition-colors"
-                title="LinkedIn"
-              >
-                <Linkedin className="w-4 h-4" />
-              </a>
+            <div className="flex items-center gap-2.5 pt-1">
+              {socials.map(({ href, label, Icon, hover }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  title={label}
+                  className={`p-2.5 rounded-xl bg-white/5 ring-1 ring-white/10 text-slate-300 hover:text-white ${hover} transition-colors`}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {footerSections.map((sec, idx) => (
-            <div key={idx} className="space-y-3">
-              <span className="font-extrabold text-[#0A317B] uppercase tracking-wider text-[11px] block">
-                {sec.title}
-              </span>
-              <ul className="space-y-2">
-                {sec.links.map((link, lIdx) => (
-                  <li key={lIdx}>
-                    <a href="#" className="hover:text-[#1A9C9B] transition-colors font-medium">
-                      {link}
+          {sections.map((sec) => (
+            <nav key={sec.title} aria-label={sec.title} className="space-y-3.5">
+              <p className="font-extrabold text-white uppercase tracking-wider text-[11px]">{sec.title}</p>
+              <ul className="space-y-2.5">
+                {sec.links.map((link) => (
+                  <li key={link.label}>
+                    <a {...linkProps(link.to)} className="text-[13px] font-medium text-slate-400 hover:text-white transition-colors">
+                      {link.label}
                     </a>
                   </li>
                 ))}
               </ul>
-            </div>
+            </nav>
           ))}
-
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-gray-500 font-mono text-[11px]">
-          <div>
-            © {new Date().getFullYear()} CareerCore Edutech Private Limited. All rights reserved.
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1">
-              <span>Crafted with</span>
-              <Heart className="w-3.5 h-3.5 text-[#FA9C16] fill-[#FA9C16]" />
-              <span>for future tech leaders</span>
-            </div>
-
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs">
+          <p>© {new Date().getFullYear()} {SITE.legalName}. All rights reserved.</p>
+          <div className="flex items-center gap-5">
+            <a {...linkProps('/privacy-policy')} className="hover:text-white">Privacy</a>
+            <a {...linkProps('/terms')} className="hover:text-white">Terms</a>
             <button
-              onClick={scrollToTop}
-              className="p-2 rounded-xl bg-gray-100 hover:bg-[#0A317B] hover:text-white transition-all text-gray-700 cursor-pointer flex items-center gap-1"
-              title="Back to top"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="p-2 rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/15 hover:text-white transition-all text-slate-300 cursor-pointer"
+              aria-label="Back to top"
             >
               <ArrowUp className="w-4 h-4" />
             </button>
           </div>
         </div>
-
       </div>
     </footer>
   );

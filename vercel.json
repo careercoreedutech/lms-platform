@@ -2,7 +2,119 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mentor",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mentor/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/teacher",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/teacher/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/portal",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/portal/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/student",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/student/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/courses/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/career-reports",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projects-hub",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/workshops",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/interview-prep",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/syllabus",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/alumni",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mission",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/careers",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/press",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/events",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/refund-policy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/isa-terms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/career-support-sla",
       "destination": "/index.html"
     }
   ],
@@ -37,5 +149,6 @@
         }
       ]
     }
-  ]
+  ],
+  "cleanUrls": false
 }

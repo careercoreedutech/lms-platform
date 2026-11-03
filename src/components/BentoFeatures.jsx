@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useLms } from '../context/LmsContext';
+import Highlight from './ui/Highlight';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Cpu, 
@@ -16,7 +18,40 @@ import {
   Zap
 } from 'lucide-react';
 
+// Map each specialization tab to the matching registration program
+const TRACK_COURSE_MATCH = {
+  fullstack: ['full stack'],
+  ai: ['machine learning', 'ai &', 'data science'],
+  cloud: ['cloud', 'devops', 'data'],
+};
+
+
+const Card = ({ className = '', children }) => (
+  <div className={`group relative flex flex-col bg-white rounded-[28px] p-6 sm:p-8 ring-1 ring-slate-200/80 shadow-[0_1px_2px_rgba(10,49,123,0.04)] hover:shadow-[0_24px_60px_-24px_rgba(10,49,123,0.25)] transition-shadow duration-300 overflow-hidden ${className}`}>
+    {children}
+  </div>
+);
+const CardHead = ({ icon: Icon, tone, label, title, desc, action }) => (
+  <div>
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      <span className={`inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap ${tone}`}>
+        <span className="w-6 h-6 rounded-full bg-white/80 flex items-center justify-center"><Icon className="w-3.5 h-3.5" /></span>
+        {label}
+      </span>
+      {action}
+    </div>
+    <h3 className="text-2xl font-black text-brand-navy tracking-tight">{title}</h3>
+    <p className="text-[15px] text-slate-600 mt-2 leading-relaxed max-w-lg">{desc}</p>
+  </div>
+);
+
 export default function BentoFeatures() {
+  const { courses = [], openEnrollment } = useLms();
+  const enrollInTrack = (trackKey, fallbackTitle) => {
+    const needles = TRACK_COURSE_MATCH[trackKey] || [];
+    const match = courses.find((c) => needles.some((n) => c.title?.toLowerCase().includes(n)));
+    openEnrollment(match?.title || fallbackTitle);
+  };
   // Card 1 State: Selected AI Module
   const [activeModule, setActiveModule] = useState(0);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -120,408 +155,266 @@ export default function BentoFeatures() {
     }, 600);
   };
 
+  const cert = certs[activeCert];
+
   return (
-    <section id="features" className="py-24 bg-white relative overflow-hidden">
-      {/* Background subtle multi-color brand glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-gradient-to-r from-[#0A317B]/5 via-[#1A9C9B]/5 to-[#FA9C16]/5 blur-3xl rounded-full pointer-events-none" />
+    <section id="features" className="py-20 sm:py-28 bg-slate-50/70 border-y border-slate-100 relative overflow-hidden">
+      <div aria-hidden className="absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full bg-[radial-gradient(closest-side,rgba(26,156,155,0.08),transparent)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#0A317B]/10 via-[#1A9C9B]/10 to-[#FA9C16]/10 border border-[#1A9C9B]/30 shadow-sm mb-4">
-            <span className="w-2 h-2 rounded-full bg-[#FA9C16] animate-pulse" />
-            <span className="w-2 h-2 rounded-full bg-[#1A9C9B]" />
-            <span className="w-2 h-2 rounded-full bg-[#0A317B]" />
-            <span className="text-xs font-extrabold uppercase tracking-widest text-[#0A317B]">
-              CareerCore EdTech Ecosystem
-            </span>
-          </div>
-
-          <h2 className="text-3xl sm:text-5xl font-extrabold text-[#0A317B] tracking-tight leading-tight">
-            Everything you need to <br />
-            <span className="bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] bg-clip-text text-transparent">
-              accelerate your career
-            </span>
+        <div className="max-w-3xl mx-auto text-center mb-14">
+          <span className="eyebrow mb-5"><span className="w-1.5 h-1.5 rounded-full bg-brand-orange" /> Why CareerCore</span>
+          <h2 className="section-title">
+            Everything you need to <br className="hidden sm:block" />
+            <Highlight>accelerate your career</Highlight>
           </h2>
-          <p className="mt-4 text-base sm:text-lg text-gray-600">
-            Click & interact with our live AI learning engine, specialization tracks, credentials, and career portfolio compiler.
+          <p className="section-lead">
+            An adaptive learning engine, industry-aligned specializations, verifiable credentials and a career pipeline — all in one place. Try them below.
           </p>
         </div>
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          
-          {/* ========================================================================= */}
-          {/* BENTO CARD 1: AI Adaptive Curricula - Personalized Learning Engine */}
-          {/* ========================================================================= */}
-          <motion.div 
-            whileHover={{ y: -4 }}
-            className="md:col-span-7 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-[0_10px_30px_rgba(10,49,123,0.05)] hover:shadow-[0_20px_40px_rgba(10,49,123,0.1)] transition-all relative overflow-hidden flex flex-col justify-between group"
-          >
-            {/* Top Multi-color Accent Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16]" />
-
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FA9C16]/20 via-[#1A9C9B]/20 to-[#0A317B]/20 p-[1.5px] shadow-sm">
-                  <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center text-[#FA9C16]">
-                    <Cpu className="w-6 h-6" />
-                  </div>
-                </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+          {/* ── 1. Adaptive learning ── */}
+          <Card className="lg:col-span-7">
+            <CardHead
+              icon={Zap}
+              tone="bg-orange-50 text-orange-700"
+              label="AI adaptive curricula"
+              title="Personalized learning engine"
+              desc="Adaptive algorithms assess your level and generate custom modules, practice quizzes and real-time feedback loops."
+              action={
                 <button
                   onClick={handleSimulateAI}
                   disabled={isSimulating}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#FA9C16] to-[#1A9C9B] hover:opacity-90 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-brand-navy bg-slate-100 hover:bg-slate-200 rounded-full transition-colors cursor-pointer shrink-0"
                 >
-                  <Sparkles className={`w-3.5 h-3.5 ${isSimulating ? 'animate-spin' : ''}`} />
-                  <span>{isSimulating ? 'Evaluating AI...' : 'Next AI Module'}</span>
+                  <Sparkles className={`w-3.5 h-3.5 text-brand-orange ${isSimulating ? 'animate-spin' : ''}`} />
+                  {isSimulating ? 'Adapting…' : 'Next module'}
                 </button>
+              }
+            />
+            <div className="mt-8 p-5 rounded-2xl bg-brand-navy text-white">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-white/50">{modules[activeModule].name} · {modules[activeModule].duration}</p>
+                  <p className="text-base font-extrabold mt-0.5 flex items-center gap-2"><Terminal className="w-4 h-4 text-brand-teal shrink-0" />{modules[activeModule].title}</p>
+                  <p className="text-xs text-white/60 mt-1">{modules[activeModule].topic}</p>
+                </div>
+                <span className="text-2xl font-black tabular-nums">{modules[activeModule].progress}<span className="text-sm text-white/50">%</span></span>
               </div>
-
-              <span className="text-xs font-mono text-[#FA9C16] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5" /> AI ADAPTIVE CURRICULA
-              </span>
-              <h3 className="text-2xl font-bold text-[#0A317B] mt-1">
-                Personalized Learning Engine
-              </h3>
-              <p className="text-sm text-gray-600 mt-2 leading-relaxed max-w-lg">
-                Adaptive AI algorithms assess your current skill level and generate custom learning modules, practice quizzes, and real-time feedback loops.
-              </p>
-            </div>
-
-            {/* Interactive Module Selector Terminal Box */}
-            <div className="mt-8 p-5 rounded-2xl bg-[#0A317B] text-white font-mono text-xs space-y-4 border border-[#0A317B]/40 shadow-inner">
-              <div className="flex flex-wrap items-center justify-between text-gray-300 border-b border-blue-950 pb-3 gap-2">
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-[#1A9C9B]" />
-                  <span className="text-white font-bold">{modules[activeModule].title}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-gray-400 text-[11px]">Duration: {modules[activeModule].duration}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold text-white" style={{ backgroundColor: modules[activeModule].color }}>
-                    {modules[activeModule].progress}% Done
-                  </span>
-                </div>
+              <div className="mt-4 h-2 bg-white/10 rounded-full overflow-hidden">
+                <motion.div
+                  initial={false}
+                  animate={{ width: `${modules[activeModule].progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  className="h-full rounded-full bg-gradient-to-r from-brand-teal to-brand-orange"
+                />
               </div>
-
-              {/* Progress bar animation */}
-              <div>
-                <div className="flex justify-between text-[11px] text-gray-300 mb-1">
-                  <span>Topic: {modules[activeModule].topic}</span>
-                  <span className="text-[#FA9C16] font-bold">{modules[activeModule].name}</span>
-                </div>
-                <div className="w-full h-2 bg-blue-950 rounded-full overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${modules[activeModule].progress}%` }}
-                    transition={{ duration: 0.5 }}
-                    className="h-full rounded-full bg-gradient-to-r from-[#1A9C9B] to-[#FA9C16]"
-                  />
-                </div>
-              </div>
-
-              {/* Clickable Module Swatches (Multi-Color Branding) */}
-              <div>
-                <span className="text-[10px] text-gray-400 block mb-2 font-sans font-semibold">
-                  SELECT MODULE TO INSPECT (CLICK BELOW):
-                </span>
-                <div className="grid grid-cols-6 gap-2">
-                  {modules.map((mod, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveModule(idx)}
-                      className={`p-2 rounded-xl text-center space-y-1 transition-all border cursor-pointer ${
-                        activeModule === idx 
-                          ? 'border-white bg-white/10 ring-2 ring-[#FA9C16] scale-105' 
-                          : 'border-transparent hover:bg-white/5 opacity-80 hover:opacity-100'
-                      }`}
-                    >
-                      <div 
-                        className="h-7 rounded-lg shadow-inner flex items-center justify-center text-[10px] font-bold text-white"
-                        style={{ backgroundColor: mod.color }}
-                      >
-                        {idx + 1}
-                      </div>
-                      <span className="text-[9px] text-gray-300 block truncate font-sans">
-                        Mod {idx + 1}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+              <div className="mt-5 grid grid-cols-6 gap-1.5 sm:gap-2" role="tablist" aria-label="Modules">
+                {modules.map((mod, idx) => (
+                  <button
+                    key={idx}
+                    role="tab"
+                    aria-selected={activeModule === idx}
+                    onClick={() => setActiveModule(idx)}
+                    className={`group/m rounded-xl p-1.5 sm:p-2 text-center transition-all cursor-pointer ${activeModule === idx ? 'bg-white text-brand-navy' : 'bg-white/5 hover:bg-white/10 text-white/70'}`}
+                  >
+                    <span className="block text-sm font-black">{idx + 1}</span>
+                    <span className="block h-1 mt-1.5 rounded-full bg-current/20 overflow-hidden">
+                      <span className="block h-full rounded-full" style={{ width: `${mod.progress}%`, backgroundColor: mod.color === '#0A317B' ? '#38bdf8' : mod.color }} />
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
-          </motion.div>
+          </Card>
 
-          {/* ========================================================================= */}
-          {/* BENTO CARD 2: Multi-Track Programs - Specializations */}
-          {/* ========================================================================= */}
-          <motion.div 
-            whileHover={{ y: -4 }}
-            className="md:col-span-5 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-[0_10px_30px_rgba(26,156,155,0.05)] hover:shadow-[0_20px_40px_rgba(26,156,155,0.1)] transition-all flex flex-col justify-between relative overflow-hidden"
-          >
-            {/* Top Multi-color Accent Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#1A9C9B] via-[#FA9C16] to-[#0A317B]" />
-
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A9C9B]/20 to-[#0A317B]/20 p-[1.5px] shadow-sm mb-6">
-                <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center text-[#1A9C9B]">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-              </div>
-
-              <span className="text-xs font-mono text-[#1A9C9B] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5" /> INDUSTRY-ALIGNED TRACKS
-              </span>
-              <h3 className="text-2xl font-bold text-[#0A317B] mt-1">
-                Multi-Domain Specializations
-              </h3>
-              <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                Choose from Software Development, Artificial Intelligence, and Cloud Computing with 100% job-oriented projects.
-              </p>
-            </div>
-
-            {/* Track Switcher */}
-            <div className="mt-8 space-y-4">
-              <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200/60">
+          {/* ── 2. Specializations ── */}
+          <Card className="lg:col-span-5">
+            <CardHead
+              icon={Layers}
+              tone="bg-teal-50 text-teal-700"
+              label="Industry-aligned tracks"
+              title="Multi-domain specializations"
+              desc="Software development, AI and cloud — every track is 100% job-oriented, with capstones employers recognise."
+            />
+            <div className="mt-auto pt-8 space-y-4">
+              <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-2xl" role="tablist" aria-label="Specializations">
                 {Object.keys(tracks).map((tKey) => {
                   const isSel = selectedTrack === tKey;
                   return (
                     <button
                       key={tKey}
+                      role="tab"
+                      aria-selected={isSel}
                       onClick={() => setSelectedTrack(tKey)}
-                      className={`py-2 px-2 text-[10px] sm:text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
-                        isSel 
-                          ? `${tracks[tKey].badgeBg} text-white shadow-md scale-[1.02]` 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-                      }`}
+                      className={`py-2 px-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${isSel ? 'bg-white text-brand-navy shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
                     >
                       {tKey === 'fullstack' ? 'Full Stack' : tKey === 'ai' ? 'AI & ML' : 'Data & Cloud'}
                     </button>
                   );
                 })}
               </div>
-
-              {/* Dynamic Specialization Details Card */}
               <AnimatePresence mode="wait">
-                <motion.div 
+                <motion.div
                   key={selectedTrack}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="p-4 sm:p-5 rounded-2xl border-2 transition-all bg-gradient-to-b from-white to-gray-50/80"
-                  style={{ borderColor: tracks[selectedTrack].primaryColor }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                  className="p-5 rounded-2xl ring-1 ring-slate-200 bg-gradient-to-b from-white to-slate-50"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-sm font-extrabold text-[#0A317B]">
-                        {tracks[selectedTrack].name}
-                      </h4>
-                      <p className="text-[11px] text-gray-500">{tracks[selectedTrack].tagline}</p>
+                      <h4 className="text-base font-extrabold text-brand-navy">{tracks[selectedTrack].name}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">{tracks[selectedTrack].tagline}</p>
                     </div>
-                    <span 
-                      className="px-2.5 py-1 rounded-full text-[10px] font-extrabold text-white shadow-sm"
-                      style={{ backgroundColor: tracks[selectedTrack].accentColor }}
-                    >
-                      {tracks[selectedTrack].salary}
+                    <span className="text-right shrink-0">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Salary range</span>
+                      <span className="block text-sm font-black text-emerald-600">{tracks[selectedTrack].salary}</span>
                     </span>
                   </div>
-
-                  {/* Skills Pills with Multi-Color Logos/Styles */}
-                  <div className="flex flex-wrap gap-1.5 my-3">
-                    {tracks[selectedTrack].skills.map((skill, idx) => (
-                      <span 
-                        key={idx}
-                        className="px-2 py-0.5 rounded-lg text-[10px] font-bold text-gray-700 bg-white border border-gray-200 shadow-2xs"
-                      >
-                        {skill}
-                      </span>
+                  <div className="flex flex-wrap gap-1.5 my-4">
+                    {tracks[selectedTrack].skills.map((skill) => (
+                      <span key={skill} className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-slate-700 bg-white ring-1 ring-slate-200">{skill}</span>
                     ))}
                   </div>
-
-                  <a
-                    href="#community"
-                    className="w-full mt-2 py-2.5 px-4 rounded-xl text-xs font-extrabold text-white text-center shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1.5 group cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => enrollInTrack(selectedTrack, tracks[selectedTrack].name)}
+                    className="w-full py-3 px-4 rounded-xl text-[13px] font-extrabold text-white text-center transition-all flex items-center justify-center gap-1.5 group/b cursor-pointer hover:brightness-110"
                     style={{ backgroundColor: tracks[selectedTrack].primaryColor }}
                   >
                     <span>Enroll in {tracks[selectedTrack].name}</span>
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </a>
+                    <ChevronRight className="w-4 h-4 group-hover/b:translate-x-1 transition-transform" />
+                  </button>
                 </motion.div>
               </AnimatePresence>
             </div>
-          </motion.div>
+          </Card>
 
-          {/* ========================================================================= */}
-          {/* BENTO CARD 3: Recognized Credentials - Industry-Verified Certifications */}
-          {/* ========================================================================= */}
-          <motion.div 
-            whileHover={{ y: -4 }}
-            className="md:col-span-6 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-[0_10px_30px_rgba(10,49,123,0.05)] hover:shadow-[0_20px_40px_rgba(10,49,123,0.1)] transition-all flex flex-col justify-between relative overflow-hidden"
-          >
-            {/* Top Multi-color Accent Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0A317B] via-[#FA9C16] to-[#1A9C9B]" />
-
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0A317B]/20 to-[#FA9C16]/20 p-[1.5px] shadow-sm mb-6">
-                <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center text-[#0A317B]">
-                  <Award className="w-6 h-6" />
-                </div>
-              </div>
-
-              <span className="text-xs font-mono text-[#0A317B] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" /> RECOGNIZED CREDENTIALS
-              </span>
-              <h3 className="text-2xl font-bold text-[#0A317B] mt-1">
-                Industry-Verified Certifications
-              </h3>
-              <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                Earn shareable certificates verified on blockchain, recognized by top employers worldwide to validate your tech competence.
-              </p>
-            </div>
-
-            {/* Interactive Certification Type Tabs */}
-            <div className="mt-8 space-y-4">
-              <div className="flex flex-wrap gap-2 text-xs font-bold">
+          {/* ── 3. Credentials ── */}
+          <Card className="lg:col-span-5">
+            <CardHead
+              icon={ShieldCheck}
+              tone="bg-blue-50 text-blue-700"
+              label="Recognized credentials"
+              title="Industry-verified certificates"
+              desc="Shareable certificates with a public verification ID, ready for LinkedIn and recruiter checks."
+            />
+            <div className="mt-auto pt-8 space-y-4">
+              {/* Certificate mock */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeCert}
+                  initial={{ opacity: 0, rotate: -1.5, y: 6 }}
+                  animate={{ opacity: 1, rotate: 0, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="relative rounded-2xl p-5 bg-[linear-gradient(135deg,#fffdf7,#fff)] ring-1 ring-amber-200/70 shadow-[0_12px_30px_-12px_rgba(250,156,22,0.35)] overflow-hidden"
+                >
+                  <div aria-hidden className="absolute inset-2 rounded-xl border border-dashed border-amber-300/60 pointer-events-none" />
+                  <div className="relative flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Certificate of completion</p>
+                      <p className="text-lg font-black text-brand-navy mt-1 leading-tight">{cert.title}</p>
+                      <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{cert.desc}</p>
+                    </div>
+                    <div className="w-14 h-14 rounded-full shrink-0 flex items-center justify-center text-white shadow-md ring-4 ring-white" style={{ backgroundColor: cert.color }}>
+                      <cert.icon className="w-6 h-6" />
+                    </div>
+                  </div>
+                  <div className="relative mt-4 pt-3 border-t border-amber-200/70 flex items-center justify-between text-[11px]">
+                    <span className="font-mono text-slate-500 flex items-center gap-1.5"><QrCode className="w-3.5 h-3.5" /> {cert.hash}</span>
+                    <span className="inline-flex items-center gap-1 font-extrabold text-emerald-600"><CheckCircle2 className="w-3.5 h-3.5" /> Verified</span>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+              <div className="flex flex-wrap gap-2" role="tablist" aria-label="Credential types">
                 {Object.keys(certs).map((cKey) => {
-                  const cert = certs[cKey];
-                  const isAct = activeCert === cKey;
+                  const c = certs[cKey];
+                  const on = activeCert === cKey;
                   return (
                     <button
                       key={cKey}
+                      role="tab"
+                      aria-selected={on}
                       onClick={() => setActiveCert(cKey)}
-                      className={`px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 text-xs cursor-pointer ${
-                        isAct 
-                          ? 'bg-[#0A317B] text-white shadow-md ring-2 ring-[#FA9C16]' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all cursor-pointer ${on ? 'bg-brand-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                     >
-                      <cert.icon className="w-3.5 h-3.5" style={{ color: isAct ? '#FA9C16' : cert.color }} />
-                      <span>{cKey === 'blockchain' ? 'Blockchain' : cKey === 'linkedin' ? 'LinkedIn' : 'Recruiter'}</span>
+                      <c.icon className="w-3.5 h-3.5" style={{ color: on ? '#FA9C16' : c.color }} />
+                      {cKey === 'blockchain' ? 'Blockchain' : cKey === 'linkedin' ? 'LinkedIn' : 'Recruiter'}
                     </button>
                   );
                 })}
               </div>
-
-              {/* Digital Certificate Verification Preview Box */}
-              <div className="p-4 rounded-2xl border border-gray-200 bg-gradient-to-r from-gray-50 via-white to-gray-50 flex items-center justify-between gap-3 shadow-inner">
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="p-3 rounded-xl text-white shadow-sm shrink-0"
-                    style={{ backgroundColor: certs[activeCert].color }}
-                  >
-                    <QrCode className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h5 className="text-xs font-extrabold text-[#0A317B]">
-                      {certs[activeCert].title}
-                    </h5>
-                    <p className="text-[10px] text-gray-500 font-mono mt-0.5">
-                      Hash: {certs[activeCert].hash}
-                    </p>
-                    <p className="text-[11px] text-gray-600 mt-1 max-w-xs leading-snug">
-                      {certs[activeCert].desc}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-end gap-1">
-                  <span className="px-2 py-1 rounded bg-teal-50 border border-[#1A9C9B]/40 text-[#1A9C9B] font-extrabold text-[10px] flex items-center gap-1">
-                    <CheckCircle2 className="w-3 h-3" /> VERIFIED
-                  </span>
-                </div>
-              </div>
             </div>
-          </motion.div>
+          </Card>
 
-          {/* ========================================================================= */}
-          {/* BENTO CARD 4: Automated Career Compiler */}
-          {/* ========================================================================= */}
-          <motion.div 
-            whileHover={{ y: -4 }}
-            className="md:col-span-6 bg-white p-6 sm:p-8 rounded-3xl border border-gray-200/80 shadow-[0_10px_30px_rgba(26,156,155,0.05)] hover:shadow-[0_20px_40px_rgba(26,156,155,0.1)] transition-all flex flex-col justify-between relative overflow-hidden"
-          >
-            {/* Top Multi-color Accent Bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#FA9C16] via-[#0A317B] to-[#1A9C9B]" />
-
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1A9C9B]/20 to-[#FA9C16]/20 p-[1.5px] shadow-sm mb-6">
-                <div className="w-full h-full bg-white rounded-2xl flex items-center justify-center text-[#1A9C9B]">
-                  <Briefcase className="w-6 h-6" />
-                </div>
-              </div>
-
-              <span className="text-xs font-mono text-[#1A9C9B] font-extrabold uppercase tracking-wider flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" /> CAREER PIPELINE
-              </span>
-              <h3 className="text-2xl font-bold text-[#0A317B] mt-1">
-                Automated Career Compiler
-              </h3>
-              <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                Compile your capstone projects, GitHub commits, and assessment scores into an ATS-friendly candidate profile delivered to 500+ recruiters.
-              </p>
-            </div>
-
-            {/* Interactive Pipeline Stepper & Recruiter Invite Feed */}
-            <div className="mt-8 space-y-3">
-              {/* Stepper Buttons */}
-              <div className="grid grid-cols-3 gap-2">
-                {pipelineSteps.map((step, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setPipelineStep(idx)}
-                    className={`p-2 rounded-xl text-left transition-all border cursor-pointer ${
-                      pipelineStep === idx 
-                        ? 'bg-[#0A317B] text-white border-[#0A317B] shadow-md' 
-                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                    }`}
-                  >
-                    <span className="text-[10px] font-extrabold block" style={{ color: pipelineStep === idx ? '#FA9C16' : step.color }}>
-                      Step 0{idx + 1}
-                    </span>
-                    <span className="text-[11px] font-bold block truncate">{step.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Active Recruiter Offer Invitation Stream */}
-              <div className="p-4 rounded-2xl bg-[#0A317B] text-white font-mono text-xs space-y-2 border border-[#0A317B]/40 shadow-inner">
-                <div className="flex items-center justify-between border-b border-blue-950 pb-2 text-[11px]">
-                  <span className="text-[#1A9C9B] font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-[#FA9C16]" /> Live Career Stream
+          {/* ── 4. Career pipeline ── */}
+          <Card className="lg:col-span-7">
+            <CardHead
+              icon={TrendingUp}
+              tone="bg-emerald-50 text-emerald-700"
+              label="Career pipeline"
+              title="Automated career compiler"
+              desc="Your capstones, GitHub commits and assessment scores compiled into an ATS-friendly profile shared with 500+ recruiters."
+            />
+            <div className="mt-auto pt-8 grid sm:grid-cols-[180px_1fr] gap-4">
+              <ol className="grid grid-cols-3 sm:grid-cols-1 gap-2">
+                {pipelineSteps.map((step, idx) => {
+                  const on = pipelineStep === idx;
+                  const done = idx < pipelineStep;
+                  return (
+                    <li key={idx}>
+                      <button
+                        onClick={() => setPipelineStep(idx)}
+                        className={`w-full h-full p-3 rounded-xl text-left transition-all cursor-pointer ring-1 ${on ? 'bg-brand-navy text-white ring-brand-navy' : 'bg-white text-slate-700 ring-slate-200 hover:ring-slate-300'}`}
+                      >
+                        <span className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider ${on ? 'text-brand-orange' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+                          {done ? <CheckCircle2 className="w-3 h-3" /> : null} Step {idx + 1}
+                        </span>
+                        <span className="block text-xs font-bold mt-0.5">{step.label}</span>
+                        <span className={`hidden sm:block text-[11px] mt-0.5 ${on ? 'text-white/60' : 'text-slate-400'}`}>{step.sub}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+              <div className="p-4 rounded-2xl bg-slate-950 text-white">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10 text-[11px]">
+                  <span className="flex items-center gap-1.5 font-bold text-white/80">
+                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" /><span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" /></span>
+                    Live career stream
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-[#FA9C16] text-white font-extrabold text-[10px]">
-                    5 Active Calls
-                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-brand-orange/15 text-brand-orange font-extrabold">{pipelineStep + 1} active</span>
                 </div>
-
-                <div className="space-y-1.5 pt-1">
-                  {interviews.slice(0, pipelineStep + 1).map((item, idx) => (
-                    <motion.div 
-                      key={idx}
-                      initial={{ opacity: 0, x: -10 }}
+                <div className="space-y-2">
+                  {interviews.slice(0, pipelineStep + 1).map((item) => (
+                    <motion.div
+                      key={item.company}
+                      initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center justify-between p-2 rounded-lg bg-blue-950/70 border border-blue-900/60 text-[11px]"
+                      className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 ring-1 ring-white/10"
                     >
-                      <div>
-                        <span className="font-bold text-white block">{item.company}</span>
-                        <span className="text-gray-400 text-[10px]">{item.role}</span>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-xs font-black shrink-0">{item.company[0]}</span>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-bold truncate">{item.company}</p>
+                          <p className="text-[11px] text-white/50 truncate">{item.role}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <span className="text-[#FA9C16] font-bold block">{item.package}</span>
-                        <span className="text-[#1A9C9B] text-[9px] uppercase tracking-wider">{item.status}</span>
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-black text-brand-orange">{item.package}</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-wider ${item.status === 'Confirmed' ? 'text-emerald-400' : 'text-sky-300'}`}>{item.status}</p>
                       </div>
                     </motion.div>
                   ))}
                 </div>
               </div>
             </div>
-          </motion.div>
-
+          </Card>
         </div>
-
       </div>
     </section>
   );

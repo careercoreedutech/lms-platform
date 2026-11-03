@@ -1,512 +1,261 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Check, 
-  ChevronLeft, 
-  ChevronRight, 
-  Sun, 
-  Moon, 
-  X, 
-  Sparkles, 
-  ArrowRight, 
-  GraduationCap, 
-  Award, 
-  BookOpen, 
-  Briefcase,
-  Star
-} from 'lucide-react';
-import BottomFlowBar from './BottomFlowBar';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Sparkles, ArrowRight, Star, PhoneCall, CheckCircle2, Video, Briefcase, CalendarDays } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import { getNextBatchStart, slugify } from '../config/site';
+import Highlight from './ui/Highlight';
+import CountUp from './ui/CountUp';
+
+const HeroScene = lazy(() => import('./three/HeroScene'));
+
+const AVATAR_COLORS = ['from-brand-teal to-sky-400', 'from-brand-orange to-amber-300', 'from-sky-500 to-indigo-500', 'from-emerald-400 to-brand-teal'];
+
+function hasWebGL() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+  } catch {
+    return false;
+  }
+}
+
+class SceneBoundary extends React.Component {
+  constructor(p) { super(p); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err) { console.warn('[HeroScene] disabled:', err?.message); }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
+
+// Shown while the 3D chunk loads, or when WebGL isn't available
+function OrbFallback() {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center" aria-hidden="true">
+      <div className="relative w-56 h-56 sm:w-72 sm:h-72">
+        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_30%,#5EEAD4,#1A9C9B_40%,#0A317B_75%)] shadow-[0_0_120px_rgba(26,156,155,0.45)]" />
+        <div className="absolute -inset-10 rounded-full border border-sky-300/20 rotate-12" />
+        <div className="absolute -inset-20 rounded-full border border-orange-300/15 -rotate-12" />
+      </div>
+    </div>
+  );
+}
+
+function FloatCard({ className, delay = 0, children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.6 + delay, duration: 0.5 }}
+      className={`absolute z-10 glass-dark rounded-2xl px-4 py-3 text-white ${className}`}
+    >
+      <motion.div animate={{ y: [0, -6, 0] }} transition={{ repeat: Infinity, duration: 5 + delay * 2, ease: 'easeInOut' }}>
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
 
 export default function HeroSection() {
-  const { openEnrollment, setAuthModal } = useLms();
-  const [selectedFormat, setSelectedFormat] = useState('Live'); // 'Live' | 'Self-Paced' | 'Mentor' | 'Projects'
-  const [skillCount, setSkillCount] = useState(25);
-  const [courseIndex, setCourseIndex] = useState(0);
-  const [assessmentChecked, setAssessmentChecked] = useState(true);
-  const [darkModeActive, setDarkModeActive] = useState(false);
-  const [selectedCertMode, setSelectedCertMode] = useState('Honors'); // 'Standard' | 'Honors'
-  const [chatOpen, setChatOpen] = useState(true);
-  const [curveHeight, setCurveHeight] = useState(14);
+  const { openEnrollment, openCounseling, navigate, feedbacks = [], courses = [] } = useLms();
+  const [webgl, setWebgl] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
 
-  const courses = [
-    { name: 'Full Stack Web Dev', primary: '#0A317B', secondary: '#1A9C9B', category: 'Software' },
-    { name: 'AI & Data Science', primary: '#1A9C9B', secondary: '#FA9C16', category: 'AI/ML' },
-    { name: 'Cloud & DevOps', primary: '#FA9C16', secondary: '#0A317B', category: 'Cloud' },
-    { name: 'UI/UX Design', primary: '#0A317B', secondary: '#FA9C16', category: 'Design' },
-  ];
+  useEffect(() => {
+    setWebgl(hasWebGL());
+    const mq = window.matchMedia('(max-width: 1023px)');
+    const set = () => setCompact(mq.matches);
+    set();
+    mq.addEventListener?.('change', set);
+    return () => mq.removeEventListener?.('change', set);
+  }, []);
 
-  const currentCourse = courses[courseIndex];
-
-  const formatFamilies = {
-    Live: 'Inter, sans-serif',
-    'Self-Paced': 'Georgia, serif',
-    Mentor: '"Fragment Mono", monospace',
-    Projects: 'Hepta Slab, serif'
-  };
-
-  const borderRadiusVal = selectedCertMode === 'Standard' ? '4px' : '20px';
+  const avgRating = feedbacks.length
+    ? (feedbacks.reduce((a, f) => a + (Number(f.rating) || 5), 0) / feedbacks.length).toFixed(1)
+    : '4.9';
+  const batch = getNextBatchStart().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' });
+  const quickLinks = courses.slice(0, 4);
 
   return (
-    <section className={`relative pt-28 pb-20 transition-colors duration-500 overflow-hidden min-h-[90vh] ${
-      darkModeActive ? 'bg-[#06122b] text-white' : 'bg-white text-[#0A317B]'
-    }`}>
-      
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        {/* Top Headline Banner */}
-        <div className="text-center max-w-4xl mx-auto mb-10">
-          
-          {/* Top Pill Micro-Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-50 border border-slate-200/90 text-slate-700 text-xs font-bold mb-5 shadow-2xs"
-          >
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[#0A317B] font-extrabold">CareerCore 2.0</span>
-            <span className="text-slate-300">•</span>
-            <span className="text-slate-600">Next-Gen Tech Cohorts Open</span>
-            <Sparkles className="w-3.5 h-3.5 text-[#FA9C16]" />
-          </motion.div>
+    <section
+      className="relative overflow-hidden bg-[#050B1F] text-white"
+      style={{ paddingTop: 'calc(var(--header-h) + 2.5rem)' }}
+    >
+      {/* Atmosphere */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full bg-[radial-gradient(closest-side,rgba(26,156,155,0.28),transparent)]" />
+        <div className="absolute top-20 right-[-200px] w-[800px] h-[800px] rounded-full bg-[radial-gradient(closest-side,rgba(29,78,216,0.30),transparent)]" />
+        <div className="absolute bottom-[-300px] left-1/3 w-[700px] h-[600px] rounded-full bg-[radial-gradient(closest-side,rgba(250,156,22,0.14),transparent)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:56px_56px] [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_75%)]" />
+      </div>
 
-          {/* Main H1 Title */}
-          <motion.h1
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-[1.08] text-[#0A317B]"
-          >
-            Empowering your career, <br />
-            <span className="bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] bg-clip-text text-transparent">
-              fully accelerated
-            </span>
-          </motion.h1>
-
-          {/* Subtitle directly beneath title */}
-          <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed"
-          >
-            CareerCore Edutech is the premier learning ecosystem for ambitious students and professionals. Master in-demand industry skills, build real-world capstone projects, and land high-growth tech & business careers.
-          </motion.p>
-
-          {/* Dual Action Hero CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="mt-6 flex flex-wrap items-center justify-center gap-3.5"
-          >
-            <button
-              onClick={() => openEnrollment ? openEnrollment() : setAuthModal('enroll')}
-              className="px-7 py-3.5 rounded-2xl bg-gradient-to-r from-[#FA9C16] to-[#f58d00] hover:from-[#f58d00] hover:to-[#cb7702] text-white font-extrabold text-sm shadow-lg hover:shadow-orange-500/25 transition-all active:scale-95 flex items-center gap-2 cursor-pointer group"
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-12 gap-6 lg:gap-4 items-center">
+          {/* Copy */}
+          <div className="lg:col-span-6 xl:col-span-6 text-center lg:text-left relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full glass-dark text-[11px] sm:text-xs font-bold mb-6 whitespace-nowrap"
             >
-              <span>Explore Programs & Enroll</span>
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+              </span>
+              <span className="text-white font-extrabold">CareerCore 2.0</span>
+              <span className="text-white/30">•</span>
+              <span className="text-white/70">Next-Gen Tech Cohorts Open</span>
+              <Sparkles className="w-3.5 h-3.5 text-brand-orange" />
+            </motion.div>
 
-            <a
-              href="#features"
-              className="px-6 py-3.5 rounded-2xl bg-white hover:bg-slate-50 text-[#0A317B] font-bold text-sm border border-slate-200/90 hover:border-slate-300 shadow-xs hover:shadow transition-all flex items-center gap-2 cursor-pointer"
+            <motion.h1
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.08 }}
+              className="text-[2.6rem] leading-[1.04] sm:text-6xl xl:text-7xl font-black tracking-tight"
             >
-              <BookOpen className="w-4 h-4 text-[#1A9C9B]" />
-              <span>Browse Curriculum</span>
-            </a>
-          </motion.div>
+              Empowering your career, fully <Highlight tone="light">accelerated</Highlight>
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.16 }}
+              className="mt-6 text-base sm:text-lg text-slate-300 max-w-xl mx-auto lg:mx-0 leading-relaxed"
+            >
+              Master in-demand skills with live mentors, build real-world capstone projects, and land high-growth tech &amp; business careers.
+            </motion.p>
 
-          {/* Lottie People Animation Flow Row with Title */}
-          <div className="mt-8 pt-5 border-t border-slate-100/80">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-              Continuous Skill & Career Progression Track
-            </p>
-            <BottomFlowBar />
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.24 }}
+              className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center lg:justify-start gap-3 max-w-xs sm:max-w-none mx-auto lg:mx-0"
+            >
+              <button onClick={() => openEnrollment()} className="btn-primary justify-center !px-7 !py-4 group">
+                <span>Explore Programs &amp; Enroll</span>
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+              </button>
+              <button
+                onClick={() => openCounseling()}
+                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-bold text-white glass-dark hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <PhoneCall className="w-4 h-4 text-brand-teal" />
+                <span>Request a callback</span>
+              </button>
+            </motion.div>
+
+            {/* Program quick links */}
+            {quickLinks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.32 }}
+                className="mt-7 flex flex-wrap items-center justify-center lg:justify-start gap-2"
+              >
+                <span className="text-[11px] font-bold uppercase tracking-widest text-white/40 mr-1">Popular</span>
+                {quickLinks.map((c) => (
+                  <a
+                    key={c.id}
+                    href={`/courses/${slugify(c.title)}`}
+                    onClick={(e) => { e.preventDefault(); navigate(`/courses/${slugify(c.title)}`); }}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold text-white/80 ring-1 ring-white/15 hover:ring-brand-teal hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    {c.title}
+                  </a>
+                ))}
+              </motion.div>
+            )}
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+              className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 text-xs font-semibold text-slate-400"
+            >
+              <span className="flex items-center gap-2.5">
+                <span className="flex -space-x-2">
+                  {['A', 'P', 'K', 'S'].map((l, i) => (
+                    <span key={l} className={`w-7 h-7 rounded-full ring-2 ring-[#050B1F] bg-gradient-to-br ${AVATAR_COLORS[i]} text-white text-[10px] font-black flex items-center justify-center`}>{l}</span>
+                  ))}
+                </span>
+                <span><b className="text-white">50,000+</b> learners</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <b className="text-white">{avgRating}</b> student rating
+              </span>
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="w-4 h-4 text-brand-orange" />
+                Next batch <b className="text-white">{batch}</b>
+              </span>
+            </motion.div>
+          </div>
+
+          {/* 3D scene */}
+          <div className="lg:col-span-6 xl:col-span-6 relative h-[340px] sm:h-[420px] lg:h-[580px] -mx-4 sm:mx-0">
+            {!sceneReady && <OrbFallback />}
+            {webgl && (
+              <SceneBoundary fallback={null}>
+                <Suspense fallback={null}>
+                  <motion.div
+                    className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_58%,transparent_88%)]"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: sceneReady ? 1 : 0 }}
+                    transition={{ duration: 0.9 }}
+                  >
+                    <HeroScene compact={compact} onReady={() => setSceneReady(true)} />
+                  </motion.div>
+                </Suspense>
+              </SceneBoundary>
+            )}
+
+            <FloatCard className="hidden sm:block top-8 left-2 lg:left-0" delay={0}>
+              <p className="flex items-center gap-2 text-[11px] font-bold text-white/60 uppercase tracking-wider"><Video className="w-3.5 h-3.5 text-red-400" /> Live class</p>
+              <p className="text-sm font-extrabold mt-0.5">RAG pipelines with LangChain</p>
+              <p className="text-[11px] text-white/50 mt-0.5">38 learners attending</p>
+            </FloatCard>
+            <FloatCard className="hidden sm:block bottom-24 left-0 lg:-left-6" delay={0.25}>
+              <p className="flex items-center gap-2 text-sm font-extrabold"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Capstone approved</p>
+              <p className="text-[11px] text-white/50 mt-0.5">Mentor review · “Ready to deploy”</p>
+            </FloatCard>
+            <FloatCard className="hidden sm:block top-1/2 right-0 lg:-right-2" delay={0.5}>
+              <p className="flex items-center gap-2 text-[11px] font-bold text-white/60 uppercase tracking-wider"><Briefcase className="w-3.5 h-3.5 text-brand-orange" /> Offer received</p>
+              <p className="text-sm font-extrabold mt-0.5">Associate AI Engineer</p>
+              <div className="mt-1 flex gap-0.5">{[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-amber-400 text-amber-400" />)}</div>
+            </FloatCard>
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* MAIN 3D FLOATING TOKEN COMPOSITION CONTAINER */}
-        {/* ========================================================================= */}
-        <div className="relative w-full max-w-6xl mx-auto pt-4 pb-12 min-h-[660px] flex items-center justify-center">
-
-          {/* FLOATING 3D WIDGET 1: Top-Left Orange Curve Card (Upward Growth Curve) */}
-          <motion.div
-            animate={{ y: [0, -8, 0], rotate: [-6, -4, -6] }}
-            transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
-            whileHover={{ scale: 1.08, rotate: -2, zIndex: 40 }}
-            className="hidden md:flex absolute top-2 left-2 sm:left-6 z-20 w-44 sm:w-56 h-32 sm:h-40 bg-[#FA9C16] rounded-3xl p-3 shadow-3d-orange border-2 border-white/60 cursor-pointer flex-col justify-between"
-            onClick={() => setCurveHeight(curveHeight === 14 ? 26 : 14)}
-          >
-            <div className="w-full h-full bg-[#FA9C16] rounded-2xl border border-white/30 p-2 relative overflow-hidden flex items-center justify-center">
-              <div className="absolute top-1 left-2 text-[9px] font-mono font-bold text-white/90">
-                Learning Growth Curve 📈
-              </div>
-
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] bg-[size:16px_16px]" />
-              
-              <svg className="w-full h-full relative z-10 overflow-visible" viewBox="0 0 100 60">
-                <path
-                  d={`M 10 48 Q 50 42 90 ${curveHeight}`}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="3.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="10" cy="48" r="4.5" fill="white" stroke="#FA9C16" strokeWidth="2" />
-                <circle cx="50" cy="42" r="4" fill="white" stroke="#FA9C16" strokeWidth="2" />
-                <circle cx="90" cy={curveHeight} r="5" fill="white" stroke="#FA9C16" strokeWidth="2.5" />
-              </svg>
+        {/* Stats strip */}
+        <div className="relative mt-10 lg:mt-12 grid grid-cols-2 lg:grid-cols-4 rounded-3xl glass-dark overflow-hidden divide-x divide-y lg:divide-y-0 divide-white/10">
+          {[
+            { to: 50000, suffix: '+', label: 'Learners trained' },
+            { to: 96, suffix: '%', label: 'Interview-ready graduates' },
+            { to: Math.max(courses.length, 6), suffix: '', label: 'Industry career tracks' },
+            { to: Number(avgRating), decimals: 1, suffix: '/5', label: 'Average student rating' },
+          ].map((s) => (
+            <div key={s.label} className="p-5 sm:p-7 text-center lg:text-left">
+              <p className="text-3xl sm:text-4xl font-black tracking-tight">
+                <CountUp to={s.to} decimals={s.decimals || 0} suffix={s.suffix} />
+              </p>
+              <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">{s.label}</p>
             </div>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 2: Mid-Left Deep Navy Skill Assessment Badge */}
-          <motion.div
-            animate={{ y: [0, 8, 0], rotate: [-2, 1, -2] }}
-            transition={{ repeat: Infinity, duration: 6, ease: "easeInOut", delay: 0.5 }}
-            whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="hidden lg:block absolute top-44 left-0 sm:left-10 z-30 bg-[#0A317B] text-white p-3.5 rounded-2xl shadow-3d-navy border-2 border-white/60 cursor-pointer space-y-1.5 w-48"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-extrabold tracking-wide">Skill Verification</span>
-              <span className="text-[9px] font-mono bg-[#1A9C9B] px-1.5 py-0.5 rounded font-bold text-white">
-                {assessmentChecked ? 'Verified ✓' : 'Pending'}
-              </span>
-            </div>
-            
-            <div 
-              onClick={() => setAssessmentChecked(!assessmentChecked)}
-              className="flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors px-2.5 py-1.5 rounded-xl text-xs font-bold"
-            >
-              <div className={`w-4 h-4 rounded flex items-center justify-center border border-white transition-all ${assessmentChecked ? 'bg-white text-[#0A317B]' : ''}`}>
-                {assessmentChecked && <Check className="w-3 h-3 stroke-[3]" />}
-              </div>
-              <span>Coding & Aptitude</span>
-            </div>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 3: Teal Mastered Skills Pill */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 5.5, ease: "easeInOut", delay: 1 }}
-            whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="hidden md:flex absolute top-80 left-4 sm:left-14 z-30 bg-[#1A9C9B] text-white px-4 py-2.5 rounded-2xl shadow-3d-teal border-2 border-white/60 items-center justify-between gap-3 font-extrabold text-xs w-52"
-          >
-            <button 
-              onClick={() => setSkillCount(Math.max(5, skillCount - 1))}
-              className="p-1 hover:bg-black/10 rounded-lg transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 stroke-[3]" />
-            </button>
-            <span>{skillCount} Skills Mastered</span>
-            <button 
-              onClick={() => setSkillCount(skillCount + 1)}
-              className="p-1 hover:bg-black/10 rounded-lg transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
-            </button>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 4: Orange Course Slider */}
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 4.8, ease: "easeInOut", delay: 1.5 }}
-            whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="hidden md:flex absolute bottom-14 left-8 sm:left-20 z-30 bg-[#FA9C16] text-white px-5 py-3 rounded-2xl shadow-3d-orange border-2 border-white/60 items-center justify-between gap-4 font-extrabold text-sm w-60"
-          >
-            <button 
-              onClick={() => setCourseIndex((courseIndex - 1 + courses.length) % courses.length)}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 stroke-[3]" />
-            </button>
-            <span className="tracking-wide text-xs">{currentCourse.name}</span>
-            <button 
-              onClick={() => setCourseIndex((courseIndex + 1) % courses.length)}
-              className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4 stroke-[3]" />
-            </button>
-          </motion.div>
-
-          {/* Teal Cube Accent */}
-          <motion.div 
-            animate={{ rotate: [-12, -8, -12] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="hidden md:block absolute bottom-4 left-4 sm:left-8 z-20 w-12 h-12 bg-[#1A9C9B] rounded-2xl shadow-lg border-2 border-white/60" 
-          />
-
-          {/* FLOATING 3D WIDGET 5: Top-Right Teal Course Format Card */}
-          <motion.div
-            animate={{ y: [0, -8, 0], rotate: [6, 4, 6] }}
-            transition={{ repeat: Infinity, duration: 5.2, ease: "easeInOut", delay: 0.2 }}
-            whileHover={{ scale: 1.08, rotate: 2, zIndex: 40 }}
-            className="hidden md:block absolute top-2 right-12 sm:right-56 z-30 bg-[#1A9C9B] p-3.5 rounded-3xl shadow-3d-teal border-2 border-white/60 w-56 text-white"
-          >
-            <span className="text-xs font-extrabold block mb-2 tracking-wide">Learning Mode</span>
-            <div className="grid grid-cols-2 gap-1.5 font-bold text-xs">
-              {['Live', 'Self-Paced', 'Mentor', 'Projects'].map((fmt) => (
-                <button
-                  key={fmt}
-                  onClick={() => setSelectedFormat(fmt)}
-                  className={`py-1.5 px-3 rounded-xl border border-white/20 transition-all ${
-                    selectedFormat === fmt ? 'bg-[#0A317B] text-white shadow-md' : 'bg-white/20 text-white hover:bg-white/30'
-                  }`}
-                >
-                  {fmt}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 6: Far-Right Navy Student Record Editor Window */}
-          <motion.div
-            animate={{ y: [0, 8, 0], rotate: [4, 2, 4] }}
-            transition={{ repeat: Infinity, duration: 6.5, ease: "easeInOut", delay: 0.8 }}
-            whileHover={{ scale: 1.05, zIndex: 40 }}
-            className="absolute top-20 right-0 sm:right-2 z-20 w-64 sm:w-72 bg-[#0A317B] text-[#1A9C9B] p-4 rounded-2xl shadow-2xl border-2 border-blue-900/50 font-mono text-[11px] leading-relaxed hidden lg:block"
-          >
-            <div className="flex items-center justify-between border-b border-blue-800/60 pb-2 mb-2 text-white">
-              <span className="text-[10px] font-bold">student.career.json</span>
-              <div className="flex gap-1">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#FA9C16]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-[#1A9C9B]" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              </div>
-            </div>
-            <pre className="overflow-x-auto text-[#ffffff] text-[10px]">
-{`{
-  "student": {
-    "program": "Full Stack Dev",
-    "status": "Job-Ready"
-  },
-  "modules": [
-    "React.js",
-    "Node.js",
-    "System Design"
-  ],
-  "career": {
-    "mockInterviews": 5,
-    "certified": true
-  }
-}`}
-            </pre>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 7: Orange Study Toggle Switch */}
-          <motion.div
-            animate={{ y: [0, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 1.2 }}
-            whileHover={{ scale: 1.15, zIndex: 40 }}
-            onClick={() => setDarkModeActive(!darkModeActive)}
-            className="hidden md:flex absolute top-48 right-36 sm:right-64 z-30 bg-[#FA9C16] p-2 rounded-2xl shadow-3d-orange border-2 border-white/60 cursor-pointer items-center justify-between w-20"
-          >
-            <div className={`w-7 h-7 rounded-xl flex items-center justify-center transition-transform duration-300 ${darkModeActive ? 'translate-x-9 bg-[#0A317B] text-white' : 'bg-white text-[#0A317B]'}`}>
-              {darkModeActive ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            </div>
-          </motion.div>
-
-          {/* FLOATING 3D WIDGET 8: Orange Certificate Mode Card */}
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ repeat: Infinity, duration: 5.8, ease: "easeInOut", delay: 0.4 }}
-            whileHover={{ scale: 1.08, zIndex: 40 }}
-            className="hidden lg:block absolute bottom-12 right-6 sm:right-28 z-30 bg-[#FA9C16] text-white p-3.5 rounded-2xl shadow-3d-orange border-2 border-white/60 w-48"
-          >
-            <span className="text-xs font-extrabold block mb-2 tracking-wide">Certification Mode</span>
-            <div className="flex gap-2 text-xs font-bold">
-              <button
-                onClick={() => setSelectedCertMode('Standard')}
-                className={`flex-1 p-2 rounded-xl border border-white/20 flex flex-col items-center gap-1 transition-all ${selectedCertMode === 'Standard' ? 'bg-[#0A317B] text-white shadow-md' : 'bg-white/20'}`}
-              >
-                <div className="w-4 h-4 border-2 border-current" />
-                <span>Standard</span>
-              </button>
-
-              <button
-                onClick={() => setSelectedCertMode('Honors')}
-                className={`flex-1 p-2 rounded-xl border border-white/20 flex flex-col items-center gap-1 transition-all ${selectedCertMode === 'Honors' ? 'bg-[#0A317B] text-white shadow-md' : 'bg-white/20'}`}
-              >
-                <div className="w-4 h-4 rounded-full border-2 border-current" />
-                <span>Honors</span>
-              </button>
-            </div>
-          </motion.div>
-
-
-          {/* ========================================================================= */}
-          {/* CENTRAL CAREERCORE DASHBOARD CARD */}
-          {/* ========================================================================= */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.6 }}
-            style={{ 
-              fontFamily: formatFamilies[selectedFormat],
-              borderRadius: borderRadiusVal
-            }}
-            className="w-full max-w-3xl bg-white text-[#0A317B] p-6 shadow-2xl border border-gray-200/90 z-10 relative space-y-6 transition-all duration-300"
-          >
-            {/* Top Row: Skill Progress Chart | Donut Chart | Learning Track */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center border-b border-gray-100 pb-6">
-              
-              {/* Distribution Bar Chart */}
-              <div className="sm:col-span-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                    Student Skill Progress
-                  </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0A317B]">
-                    {currentCourse.name}
-                  </span>
-                </div>
-
-                <div className="flex justify-between text-[11px] text-gray-600 font-bold px-1">
-                  {courses.map((c, i) => (
-                    <span 
-                      key={i} 
-                      className={`cursor-pointer ${courseIndex === i ? 'text-[#0A317B] font-extrabold underline' : ''}`}
-                      onClick={() => setCourseIndex(i)}
-                    >
-                      {c.category}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Stacked Bars */}
-                <div className="grid grid-cols-4 gap-3 h-28 items-end bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                  <div 
-                    className="w-full rounded-md transition-all duration-500" 
-                    style={{ 
-                      backgroundColor: currentCourse.primary, 
-                      height: `${Math.min(95, skillCount * 3.5)}%` 
-                    }} 
-                  />
-                  <div 
-                    className="w-full rounded-md transition-all duration-500 opacity-80" 
-                    style={{ 
-                      backgroundColor: currentCourse.primary, 
-                      height: `${Math.min(85, skillCount * 2.8)}%` 
-                    }} 
-                  />
-                  <div 
-                    className="w-full rounded-md transition-all duration-500 opacity-60" 
-                    style={{ 
-                      backgroundColor: currentCourse.primary, 
-                      height: `${Math.min(100, skillCount * 3.8)}%` 
-                    }} 
-                  />
-                  <div 
-                    className="w-full rounded-md transition-all duration-500 opacity-40" 
-                    style={{ 
-                      backgroundColor: currentCourse.primary, 
-                      height: `${Math.min(65, skillCount * 2.2)}%` 
-                    }} 
-                  />
-                </div>
-
-                <div className="flex gap-2 text-[10px] text-gray-500 flex-wrap pt-1 font-sans">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded" style={{ backgroundColor: currentCourse.primary }} /> Web Dev</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#1A9C9B]" /> AI & Data</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#FA9C16]" /> DevOps</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-blue-300" /> UI/UX</span>
-                </div>
-              </div>
-
-              {/* Donut Chart */}
-              <div className="sm:col-span-3 flex flex-col items-center text-center space-y-2">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                  Course Completion
-                </span>
-                
-                <div className="relative w-24 h-24 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke="#e2e8f0"
-                      strokeWidth="3.8"
-                    />
-                    <path
-                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      fill="none"
-                      stroke={currentCourse.primary}
-                      strokeWidth="3.8"
-                      strokeDasharray={`${Math.min(95, skillCount * 3.5)}, 100`}
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center">
-                    <span className="text-sm font-extrabold text-[#0A317B]">{skillCount * 4 + 4}</span>
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">Lessons</span>
-                  </div>
-                </div>
-
-                <div className="text-[10px] text-gray-500 w-full space-y-0.5 font-sans">
-                  <div className="flex justify-between"><span>Completed</span><span className="font-bold">{skillCount * 3}</span></div>
-                  <div className="flex justify-between"><span>In Progress</span><span className="font-bold">{skillCount}</span></div>
-                  <div className="flex justify-between"><span>Upcoming</span><span className="font-bold">4</span></div>
-                </div>
-              </div>
-
-              {/* Learning Track Panel */}
-              <div className="sm:col-span-4 space-y-2 border-l border-gray-100 pl-4 font-sans">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
-                  Track Overview
-                </span>
-
-                <div className="space-y-1.5 text-xs">
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <span className="font-semibold text-gray-700">Course Track</span>
-                    <span className="text-[10px] font-bold text-[#0A317B]">{currentCourse.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <span className="font-semibold text-gray-700">Learning Format</span>
-                    <span className="text-[10px] font-bold text-[#1A9C9B]">{selectedFormat}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <span className="font-semibold text-gray-700">Certification</span>
-                    <span className="text-[10px] font-bold text-[#FA9C16]">{selectedCertMode}</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                    <span className="font-semibold text-gray-700">Job Guarantee</span>
-                    <span className="text-[10px] font-bold text-emerald-600">Active ✓</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Bottom Row: 4 EdTech Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { bg: 'text-white', primaryColor: currentCourse.primary, title: 'Real-World Projects', desc: 'Build production-ready apps' },
-                { bg: 'bg-[#1A9C9B]/10 text-[#0A317B]', primaryColor: '#1A9C9B', title: '1-on-1 Mentorship', desc: 'Guidance from top engineers' },
-                { bg: 'bg-[#FA9C16]/15 text-[#0A317B]', primaryColor: '#FA9C16', title: 'Resume Compiler', desc: 'ATS-optimized portfolio' },
-                { bg: 'bg-blue-50 text-[#0A317B]', primaryColor: '#0A317B', title: 'Career Guidance', desc: '1-on-1 interview prep' },
-              ].map((card, i) => (
-                <motion.div 
-                  key={i} 
-                  style={{ borderRadius: selectedCertMode === 'Standard' ? '4px' : '14px' }}
-                  className={`p-3.5 ${card.bg} space-y-1 shadow-sm transition-all duration-300`}
-                  {...(i === 0 ? { style: { backgroundColor: currentCourse.primary, color: '#fff', borderRadius: selectedCertMode === 'Standard' ? '4px' : '14px' } } : {})}
-                >
-                  <span className="text-[10px] font-mono opacity-80 uppercase block font-bold">CAREERCORE</span>
-                  <h6 className="text-xs font-extrabold leading-snug">{card.title}</h6>
-                  <p className="text-[10px] opacity-80 leading-tight">
-                    {card.desc}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-
-          </motion.div>
-
-
-
+          ))}
         </div>
+      </div>
 
+      {/* Skills marquee */}
+      <div className="relative mt-14 pb-14 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <p className="text-center text-[11px] font-bold uppercase tracking-[0.2em] text-white/40 mb-5">Tools &amp; technologies you’ll master</p>
+        <div className="flex w-max animate-marquee-x gap-3">
+          {[...Array(2)].flatMap((_, k) =>
+            ['React', 'Next.js', 'Node.js', 'TypeScript', 'Python', 'PyTorch', 'LangChain', 'SQL', 'PostgreSQL', 'AWS', 'Docker', 'Kubernetes', 'Terraform', 'Figma', 'Power BI', 'Jira', 'Git & GitHub', 'System Design'].map((t) => (
+              <span key={`${k}-${t}`} className="px-4 py-2 rounded-full text-sm font-semibold text-white/75 ring-1 ring-white/10 bg-white/[0.03] whitespace-nowrap">
+                {t}
+              </span>
+            ))
+          )}
+        </div>
       </div>
     </section>
   );

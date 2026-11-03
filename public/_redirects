@@ -1,1 +1,33 @@
-/*    /index.html   200
+# Known SPA routes → app (200)
+/  /index.html  200
+/admin  /index.html  200
+/admin/*  /index.html  200
+/mentor  /index.html  200
+/mentor/*  /index.html  200
+/teacher  /index.html  200
+/teacher/*  /index.html  200
+/portal  /index.html  200
+/portal/*  /index.html  200
+/student  /index.html  200
+/student/*  /index.html  200
+/courses/*  /index.html  200
+/career-reports  /index.html  200
+/projects-hub  /index.html  200
+/workshops  /index.html  200
+/interview-prep  /index.html  200
+/syllabus  /index.html  200
+/alumni  /index.html  200
+/about  /index.html  200
+/mission  /index.html  200
+/careers  /index.html  200
+/press  /index.html  200
+/events  /index.html  200
+/contact  /index.html  200
+/privacy-policy  /index.html  200
+/terms  /index.html  200
+/refund-policy  /index.html  200
+/isa-terms  /index.html  200
+/career-support-sla  /index.html  200
+
+# Anything else → app renders its 'Page not found' screen with a real 404 status
+/*  /index.html  404

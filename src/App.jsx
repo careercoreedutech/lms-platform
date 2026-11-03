@@ -14,6 +14,14 @@ import Footer from './components/Footer';
 import EnrollmentModal from './components/EnrollmentModal';
 import LoginModal from './components/LoginModal';
 import CourseAdvisorBot from './components/CourseAdvisorBot';
+import CounselingModal from './components/CounselingModal';
+import FaqSection from './components/FaqSection';
+import DashboardPreview from './components/DashboardPreview';
+import InfoPage from './components/pages/InfoPage';
+import CoursePage from './components/pages/CoursePage';
+import NotFound from './components/pages/NotFound';
+import { PAGES } from './content/pages';
+import { slugify } from './config/site';
 
 // Lazy load large portal views for optimal initial bundle size and near-instant load speeds
 const StudentPortal = lazy(() => import('./components/StudentPortal'));
@@ -29,8 +37,46 @@ function PortalLoader({ title = 'Loading Workspace...' }) {
   );
 }
 
+// Resolve a public-site path to what should render
+function resolveRoute(path, courses) {
+  const clean = (path || '/').replace(/\/+$/, '').toLowerCase() || '/';
+  if (clean === '/' || clean === '/index.html') return { type: 'home' };
+  const slug = clean.slice(1);
+  if (PAGES[slug]) return { type: 'page', slug };
+  const m = clean.match(/^\/courses\/([^/]+)$/);
+  if (m) {
+    const course = courses.find((c) => slugify(c.title) === m[1] || c.id === m[1]);
+    if (course) return { type: 'course', course };
+  }
+  return { type: 'notfound' };
+}
+
+function HomePage() {
+  return (
+    <>
+      <HeroSection />
+      <BentoFeatures />
+      <BusinessAnalystCard />
+      <DashboardPreview />
+      <InteractiveShowcase />
+      <CtaBanner />
+      <StudentFeedbackSection />
+      <FaqSection />
+    </>
+  );
+}
+
 function MainContent() {
-  const { activeView } = useLms();
+  const { activeView, currentPath, courses = [] } = useLms();
+  const route = resolveRoute(currentPath, courses);
+
+  // Scroll to #hash on first load (e.g. /#courses)
+  React.useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash || ['admin', 'mentor', 'teacher', 'portal', 'student'].includes(hash)) return;
+    const t = setTimeout(() => document.getElementById(hash)?.scrollIntoView({ block: 'start' }), 400);
+    return () => clearTimeout(t);
+  }, []);
 
   // Intro animation state machine:
   // 'intro'    → only IntroAnimation visible (site not mounted yet)
@@ -41,15 +87,12 @@ function MainContent() {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       if (
-        path.startsWith('/admin') ||
-        path.startsWith('/mentor') ||
-        path.startsWith('/teacher') ||
-        path.startsWith('/portal') ||
-        path.startsWith('/student') ||
+        /^\/(admin|mentor|teacher|portal|student)(\/|$)/.test(path) ||
         hash === '#admin' ||
         hash === '#mentor' ||
         hash === '#teacher' ||
         hash === '#portal' ||
+        (path !== '/' && path !== '/index.html') ||
         sessionStorage.getItem('careercore_intro_seen') === 'true'
       ) {
         return 'done';
@@ -128,15 +171,13 @@ function MainContent() {
 
       {/* Main Site – only mounts after intro signals reveal */}
       {introPhase !== 'intro' && (
-        <div className="min-h-screen bg-white text-[#0A317B] selection:bg-[#FA9C16] selection:text-white relative">
+        <div className="min-h-screen bg-white text-[#0A317B] selection:bg-[#FA9C16] selection:text-white relative flex flex-col">
           <Navbar />
-          <main>
-            <HeroSection />
-            <BentoFeatures />
-            <BusinessAnalystCard />
-            <InteractiveShowcase />
-            <CtaBanner />
-            <StudentFeedbackSection />
+          <main className="flex-1" key={route.type === 'home' ? 'home' : currentPath}>
+            {route.type === 'home' && <HomePage />}
+            {route.type === 'page' && <InfoPage slug={route.slug} />}
+            {route.type === 'course' && <CoursePage course={route.course} />}
+            {route.type === 'notfound' && <NotFound />}
           </main>
           <Footer />
 
@@ -146,6 +187,7 @@ function MainContent() {
           {/* Auth Modals */}
           <EnrollmentModal />
           <LoginModal />
+          <CounselingModal />
         </div>
       )}
     </>

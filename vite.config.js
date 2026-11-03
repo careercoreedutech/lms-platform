@@ -3,10 +3,23 @@ import react from '@vitejs/plugin-react';
 import https from 'https';
 import http from 'http';
 import { URL } from 'url';
+import fs from 'fs';
+import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
+    {
+      // Vercel serves dist/404.html (with a 404 status) for unknown URLs.
+      // Making it a copy of index.html lets the app boot and show its own "Page not found" screen.
+      name: 'spa-404-page',
+      apply: 'build',
+      closeBundle() {
+        const out = path.resolve(process.cwd(), 'dist');
+        const index = path.join(out, 'index.html');
+        if (fs.existsSync(index)) fs.copyFileSync(index, path.join(out, '404.html'));
+      }
+    },
     {
       name: 'drm-stream-proxy',
       configureServer(server) {

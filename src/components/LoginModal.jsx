@@ -1,35 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Lock, ArrowRight, ShieldCheck, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
+import { User, Lock, ArrowRight, Eye, EyeOff, AlertCircle, LogIn } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import Modal, { Field, inputClass } from './ui/Modal';
 
 export default function LoginModal() {
-  const { authModal, setAuthModal, loginStudent } = useLms();
+  const { authModal, setAuthModal, loginStudent, openEnrollment, openCounseling } = useLms();
+  const open = authModal === 'login';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (authModal === 'login') {
+    if (open) {
       setUsername('');
       setPassword('');
+      setShowPassword(false);
       setErrorMsg(null);
     }
-  }, [authModal]);
-
-  if (authModal !== 'login') return null;
+  }, [open]);
 
   const handleLogin = async (e) => {
-    if (e) e.preventDefault();
+    e?.preventDefault();
+    if (!username.trim() || !password) {
+      setErrorMsg('Please enter your username (or email) and password.');
+      return;
+    }
     setErrorMsg(null);
     setLoading(true);
-
     try {
-      const res = await loginStudent(username, password);
-      if (res && !res.success) {
-        setErrorMsg(res.message || 'Invalid credentials.');
-      }
+      const res = await loginStudent(username.trim(), password);
+      if (res && !res.success) setErrorMsg(res.message || 'Invalid credentials.');
     } catch (err) {
       setErrorMsg(err.message || 'An unexpected error occurred.');
     } finally {
@@ -38,114 +40,92 @@ export default function LoginModal() {
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden max-h-[92vh] flex flex-col"
-        >
-          {/* Top Accent Stripe */}
-          <div className="h-2 bg-gradient-to-r from-[#0A317B] via-[#1A9C9B] to-[#FA9C16] shrink-0" />
-
-          <div className="p-5 sm:p-8 overflow-y-auto flex-1">
-            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="CareerCore Logo" className="h-7 w-auto" />
-                <div>
-                  <h3 className="text-base sm:text-lg font-extrabold text-[#0A317B]">
-                    Student Portal Login
-                  </h3>
-                  <p className="text-xs text-gray-500">Access your enrolled courses & dashboard</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setAuthModal(null)}
-                className="p-1.5 rounded-full text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleLogin} className="mt-5 space-y-4">
-
-              {errorMsg && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 text-amber-950 text-xs font-semibold border border-amber-200 leading-relaxed space-y-1">
-                  <div className="flex items-center gap-1.5 text-amber-800 font-bold">
-                    <Clock className="w-4 h-4 text-[#FA9C16] shrink-0" />
-                    <span>Login Notice:</span>
-                  </div>
-                  <p>{errorMsg}</p>
-                </div>
-              )}
-
-              {/* Username Input */}
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">
-                  Username or Email
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    placeholder="Enter username or email address"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div>
-                <label className="text-xs font-bold text-gray-700 block mb-1">Password</label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-3" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 bg-[#0A317B] hover:bg-[#061e4f]"
-                >
-                  {loading ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-                  ) : (
-                    <>
-                      <span>Sign In To Student Portal</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="text-center pt-2 text-xs text-gray-500">
-                Need to register a new course?{' '}
-                <button 
-                  type="button"
-                  onClick={() => setAuthModal('enroll')} 
-                  className="text-[#FA9C16] font-bold hover:underline cursor-pointer"
-                >
-                  Enroll Now
-                </button>
-              </div>
-
-            </form>
+    <Modal
+      open={open}
+      onClose={() => setAuthModal(null)}
+      title="Welcome back"
+      subtitle="Sign in to your student portal to continue learning."
+      icon={<LogIn className="w-5 h-5" />}
+      labelledBy="login-title"
+    >
+      <form onSubmit={handleLogin} noValidate className="space-y-4">
+        {errorMsg && (
+          <div role="alert" className="flex gap-2 p-3 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold border border-amber-200 leading-relaxed">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <p>{errorMsg}</p>
           </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+        )}
+
+        <Field label="Username or email" required htmlFor="login-username">
+          <div className="relative">
+            <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="login-username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username or email"
+              autoComplete="username"
+              className={`${inputClass(false)} pl-10 pr-3.5`}
+            />
+          </div>
+        </Field>
+
+        <Field
+          label="Password"
+          required
+          htmlFor="login-password"
+          right={
+            <button
+              type="button"
+              onClick={() => openCounseling('Password reset')}
+              className="text-[11px] font-bold text-brand-teal hover:text-brand-navy hover:underline cursor-pointer"
+            >
+              Forgot password?
+            </button>
+          }
+        >
+          <div className="relative">
+            <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              autoComplete="current-password"
+              className={`${inputClass(false)} pl-10 pr-11`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              aria-pressed={showPassword}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-brand-navy hover:bg-slate-100 cursor-pointer"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </Field>
+
+        <button type="submit" disabled={loading} className="btn-navy w-full justify-center py-3.5">
+          {loading ? (
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <span>Sign in</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </button>
+
+        <p className="text-center text-xs text-slate-500 pt-1">
+          New to CareerCore?{' '}
+          <button type="button" onClick={() => openEnrollment()} className="text-brand-orange font-bold hover:underline cursor-pointer">
+            Create an account
+          </button>
+        </p>
+      </form>
+    </Modal>
   );
 }

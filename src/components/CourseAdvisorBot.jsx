@@ -91,9 +91,63 @@ const RECOMMENDED_COURSES = [
   }
 ];
 
+// Hide the launcher while the user scrolls down or while the footer is on screen,
+// so it never sits on top of content they are reading (BUG-016/018).
+function useLauncherVisibility() {
+  const [visible, setVisible] = useState(() => typeof window === 'undefined' || window.innerWidth >= 1024);
+  const [atTop, setAtTop] = useState(true);
+  useEffect(() => {
+    let lastY = window.scrollY;
+    let footerVisible = false;
+    let ticking = false;
+    const footer = document.querySelector('[data-site-footer]');
+    let io;
+    if (footer && 'IntersectionObserver' in window) {
+      io = new IntersectionObserver(([entry]) => {
+        footerVisible = entry.isIntersecting;
+        if (footerVisible) setVisible(false);
+      }, { rootMargin: '0px 0px -40px 0px' });
+      io.observe(footer);
+    }
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        const delta = y - lastY;
+        setAtTop(y < 120);
+        // On phones/tablets the hero text runs edge to edge, so keep the launcher
+        // out of the hero and only bring it back when the user scrolls up.
+        const compact = window.innerWidth < 1024;
+        const heroZone = compact && y < window.innerHeight * 0.9;
+        if (heroZone) setVisible(false);
+        else if (y < 120) setVisible(!footerVisible);
+        else if (delta > 6) setVisible(false);
+        else if (delta < -6) setVisible(!footerVisible);
+        lastY = y;
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      io?.disconnect();
+    };
+  }, []);
+  return { visible, atTop };
+}
+
 export default function CourseAdvisorBot() {
-  const { setAuthModal } = useLms();
+  const { openEnrollment, openCounseling } = useLms();
+  const setAuthModal = (m) => (m === 'enroll' ? openEnrollment() : null);
   const [isOpen, setIsOpen] = useState(false);
+  const { visible: launcherVisible } = useLauncherVisibility();
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setIsOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen]);
   const [messages, setMessages] = useState([
     {
       id: 'welcome-1',
@@ -102,8 +156,8 @@ export default function CourseAdvisorBot() {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       options: [
         { label: 'Recommend a course for me', action: 'start_quiz' },
-        { label: 'Product Management (5 Wks)', action: 'select_pm' },
-        { label: 'Full Stack Web Dev (12 Wks)', action: 'select_fs' },
+        { label: 'Product Management (5 Weeks)', action: 'select_pm' },
+        { label: 'Full Stack Web Dev (12 Weeks)', action: 'select_fs' },
         { label: 'AI & Machine Learning Track', action: 'select_ai' },
         { label: 'Ask about tuition fees & career tracks', action: 'faq_pricing' }
       ]
@@ -253,6 +307,12 @@ export default function CourseAdvisorBot() {
       return;
     }
 
+    if (option.action === 'talk_desk') {
+      setIsOpen(false);
+      openCounseling('Enrollment desk');
+      return;
+    }
+
     if (option.action === 'reset_chat') {
       addBotMessage("How else can I assist your career journey today?", [
         { label: 'Recommend a course for me', action: 'start_quiz' },
@@ -320,7 +380,7 @@ export default function CourseAdvisorBot() {
         `Thank you for asking! Based on your query "${userText}", I recommend taking our 30-second AI Course Match Quiz to get a tailored recommendation.`,
         [
           { label: 'Start 30-sec Match Quiz', action: 'start_quiz' },
-          { label: 'Talk to Enrollment Desk', action: 'trigger_enroll' }
+          { label: 'Talk to Enrollment Desk', action: 'talk_desk' }
         ]
       );
     }
@@ -328,40 +388,28 @@ export default function CourseAdvisorBot() {
 
   return (
     <>
-      {/* FLOATING BOT LAUNCHER BUTTON */}
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col items-center gap-1">
+      {/* FLOATING BOT LAUNCHER — compact, steps aside while reading */}
+      <div
+        className={`hide-on-overlay fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 flex items-center gap-2 transition-all duration-300 ${
+          launcherVisible || isOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
+        } ${isOpen ? 'max-sm:hidden' : ''}`}
+      >
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-20 h-20 sm:w-24 sm:h-24 bg-transparent flex items-center justify-center relative hover:scale-105 transition-all cursor-pointer border-none outline-none group focus:outline-none"
-          title="Open Course Advisor Chat"
+          aria-label={isOpen ? 'Close course advisor chat' : 'Open course advisor chat'}
+          aria-expanded={isOpen}
+          className="relative w-14 h-14 rounded-full bg-gradient-to-br from-brand-navy to-[#0D419D] shadow-[0_12px_30px_-8px_rgba(10,49,123,0.6)] ring-4 ring-white flex items-center justify-center hover:scale-105 active:scale-95 transition-transform cursor-pointer overflow-hidden"
         >
           {isOpen ? (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <BotAvatar className="w-full h-full" />
-              <div className="absolute top-1 right-1 w-7 h-7 rounded-full bg-[#0A317B] text-white flex items-center justify-center shadow-lg border border-white">
-                <X className="w-4 h-4" />
-              </div>
-            </div>
+            <X className="w-6 h-6 text-white" />
           ) : (
-            <div className="relative w-full h-full flex items-center justify-center">
-              <BotAvatar className="w-full h-full" />
-              <span className="absolute top-2 right-2 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white animate-pulse shadow-md" />
-            </div>
+            <>
+              <span className="absolute inset-0 scale-[1.35] translate-y-1"><BotAvatar /></span>
+              <span className="absolute top-1 right-1 w-3 h-3 bg-emerald-400 rounded-full ring-2 ring-white" />
+            </>
           )}
         </button>
-
-        {!isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 5, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0A317B] text-white shadow-2xl border border-white/20 text-[11px] font-extrabold cursor-pointer hover:bg-[#07245c] transition-all"
-            onClick={() => setIsOpen(true)}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#FA9C16] animate-pulse" />
-            <span>Need course advice? Ask AI Bot!</span>
-          </motion.div>
-        )}
       </div>
 
       {/* CHATBOT DRAWER / WINDOW */}
@@ -372,7 +420,9 @@ export default function CourseAdvisorBot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25 }}
-            className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-96 max-h-[calc(100vh-6rem)] h-[520px] bg-white rounded-3xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
+            role="dialog"
+            aria-label="Course advisor chat"
+            className="hide-on-overlay fixed inset-x-2 bottom-2 sm:inset-x-auto sm:right-5 sm:bottom-24 z-40 sm:w-96 h-[min(600px,calc(100dvh-5rem))] sm:h-[min(540px,calc(100dvh-8rem))] bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 flex flex-col overflow-hidden"
           >
             {/* CHAT HEADER */}
             <div className="p-4 bg-gradient-to-r from-[#0A317B] via-[#0D41A1] to-[#1A9C9B] text-white flex items-center justify-between shrink-0 shadow-md">
@@ -401,8 +451,8 @@ export default function CourseAdvisorBot() {
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                         options: [
                           { label: 'Recommend a course for me', action: 'start_quiz' },
-                          { label: 'Product Management (5 Wks)', action: 'select_pm' },
-                          { label: 'Full Stack Web Dev (12 Wks)', action: 'select_fs' },
+                          { label: 'Product Management (5 Weeks)', action: 'select_pm' },
+                          { label: 'Full Stack Web Dev (12 Weeks)', action: 'select_fs' },
                           { label: 'AI & Machine Learning Track', action: 'select_ai' }
                         ]
                       }
@@ -416,6 +466,7 @@ export default function CourseAdvisorBot() {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
+                  aria-label="Close chat"
                   className="p-1.5 rounded-lg text-teal-100 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -482,7 +533,7 @@ export default function CourseAdvisorBot() {
                           type="button"
                           onClick={() => {
                             setIsOpen(false);
-                            setAuthModal('enroll');
+                            openEnrollment();
                           }}
                           className="px-3 py-1.5 rounded-xl bg-[#FA9C16] hover:bg-[#e0890f] text-white font-extrabold shadow-xs transition-all flex items-center gap-1 cursor-pointer"
                         >

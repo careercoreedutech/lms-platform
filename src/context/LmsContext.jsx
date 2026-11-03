@@ -349,9 +349,21 @@ function getViewFromLocation() {
   const path = window.location.pathname.toLowerCase();
   const hash = window.location.hash.toLowerCase();
 
-  if (path.startsWith('/admin') || hash === '#admin') return 'admin';
-  if (path.startsWith('/mentor') || path.startsWith('/teacher') || hash === '#mentor' || hash === '#teacher') return 'mentor';
-  if (path.startsWith('/portal') || path.startsWith('/student') || hash === '#portal' || hash === '#student') return 'portal';
+  const view = getViewFromPath(path);
+  if (view !== 'landing') return view;
+  if (hash === '#admin') return 'admin';
+  if (hash === '#mentor' || hash === '#teacher') return 'mentor';
+  if (hash === '#portal' || hash === '#student') return 'portal';
+  return 'landing';
+}
+
+function getViewFromPath(pathname) {
+  const path = (pathname || '/').toLowerCase();
+  // Match whole path segments only, so e.g. /student-projects stays a public page
+  const is = (prefix) => path === prefix || path.startsWith(`${prefix}/`);
+  if (is('/admin')) return 'admin';
+  if (is('/mentor') || is('/teacher')) return 'mentor';
+  if (is('/portal') || is('/student')) return 'portal';
   return 'landing';
 }
 
@@ -405,6 +417,10 @@ export function LmsProvider({ children }) {
   });
 
   const [activeView, setActiveViewState] = useState(() => getViewFromLocation());
+  // Current public-site path (used to render content pages, course pages and the 404 page)
+  const [currentPath, setCurrentPath] = useState(() =>
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  );
 
   // Function to switch view AND update the browser URL
   const setActiveView = useCallback((newView, replace = false) => {
@@ -419,6 +435,38 @@ export function LmsProvider({ children }) {
           window.history.pushState({ view: canonicalView }, '', targetPath);
         }
       }
+      setCurrentPath(targetPath);
+    }
+  }, []);
+
+  // Client-side navigation for public pages: navigate('/about'), navigate('/#features'), navigate('/courses/ui-ux-design')
+  const navigate = useCallback((to) => {
+    if (typeof window === 'undefined' || !to) return;
+    const [rawPath, hash] = to.split('#');
+    const targetPath = rawPath || '/';
+    const view = getViewFromPath(targetPath);
+    const samePath = window.location.pathname === targetPath;
+    if (!samePath || (hash && window.location.hash !== `#${hash}`)) {
+      window.history.pushState({ view }, '', `${targetPath}${hash ? `#${hash}` : ''}`);
+    }
+    setActiveViewState(view);
+    setCurrentPath(targetPath);
+    const scrollTarget = () => {
+      if (hash) {
+        const el = document.getElementById(hash);
+        if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); return true; }
+        return false;
+      }
+      window.scrollTo({ top: 0, behavior: samePath ? 'smooth' : 'auto' });
+      return true;
+    };
+    if (samePath) {
+      scrollTarget();
+    } else {
+      // wait for the new page to render, then scroll
+      let tries = 0;
+      const tick = () => { if (!scrollTarget() && tries++ < 20) setTimeout(tick, 50); };
+      setTimeout(tick, 30);
     }
   }, []);
 
@@ -427,6 +475,7 @@ export function LmsProvider({ children }) {
     const handlePopState = (e) => {
       const view = e.state?.view || getViewFromLocation();
       setActiveViewState(view === 'teacher' ? 'mentor' : view);
+      setCurrentPath(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -519,8 +568,15 @@ export function LmsProvider({ children }) {
 
   // ── Helpers ────────────────────────────────────────
   const openEnrollment = (courseTitle) => {
-    if (courseTitle) setSelectedEnrollCourse(courseTitle);
+    setSelectedEnrollCourse(courseTitle || null);
     setAuthModal('enroll');
+  };
+
+  // Counseling / enrollment-desk contact form ('counsel' modal)
+  const [counselTopic, setCounselTopic] = useState(null);
+  const openCounseling = (topic) => {
+    setCounselTopic(topic || null);
+    setAuthModal('counsel');
   };
 
   // ── Supabase: Load course sections & items ─────────
@@ -1655,6 +1711,10 @@ export function LmsProvider({ children }) {
       selectedEnrollCourse,
       setSelectedEnrollCourse,
       openEnrollment,
+      openCounseling,
+      counselTopic,
+      currentPath,
+      navigate,
       loading,
       createCourse,
       deleteCourse,
