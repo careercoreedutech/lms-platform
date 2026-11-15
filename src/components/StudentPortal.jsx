@@ -882,10 +882,23 @@ export default function StudentPortal() {
         ) : (
         /* Main Course Structure Section */
         <div className="max-w-5xl space-y-4">
-            
+
+            {/* Search for phones (the header search is hidden below md) */}
+            <div className="relative md:hidden">
+              <Search className="w-4 h-4 text-emerald-600 absolute left-3 top-3" />
+              <input
+                type="search"
+                aria-label="Search lessons"
+                placeholder="Search lessons..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+              />
+            </div>
+
             {/* Top Featured Item Card */}
             {featuredItem && !searchQuery.trim() && (
-              <div className={`p-4 rounded-2xl border shadow-xs flex items-center justify-between gap-4 transition-all ${
+              <div className={`p-4 rounded-2xl border shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 transition-all ${
                 isCourseFullyCompleted ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-gray-200'
               }`}>
                 <div className="flex items-center gap-3">
@@ -921,7 +934,7 @@ export default function StudentPortal() {
 
                 <button 
                   onClick={() => openItemModal(featuredItem)}
-                  className={`px-5 py-2 rounded-xl font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-5 py-2.5 sm:py-2 rounded-xl font-bold text-xs shadow-xs transition-all shrink-0 cursor-pointer flex items-center justify-center gap-1.5 ${
                     isCourseFullyCompleted
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                       : completedLessonsCount > 0

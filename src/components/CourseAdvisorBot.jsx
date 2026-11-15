@@ -16,7 +16,38 @@ import {
   Bot
 } from 'lucide-react';
 import { useLms } from '../context/LmsContext';
+import { formatDuration } from '../config/site';
 import botAnimation from '../../bot.json';
+
+// Prices and durations always come from the live course list, so the bot can never
+// quote a different fee than the course cards.
+const priceNum = (p) => Number(String(p || '').replace(/[^\d]/g, '')) || null;
+const formatPrice = (p) => (priceNum(p) ? `₹${priceNum(p).toLocaleString('en-IN')}` : '');
+const COURSE_KEYWORDS = {
+  'course-pm': ['product'],
+  'course-fs': ['full stack', 'fullstack', 'web dev'],
+  'course-ai': ['machine learning', 'ai &', 'ai and'],
+  'course-cloud': ['cloud', 'devops'],
+};
+function feeSummary(courses) {
+  const priced = courses.filter((c) => priceNum(c.price));
+  if (!priced.length) return 'Fees vary by program. Book a free counseling call and we will share the exact fee and EMI options.';
+  const nums = priced.map((c) => priceNum(c.price));
+  const lines = priced.map((c) => `• ${c.title}: ${formatPrice(c.price)}`).join('\n');
+  return `Program fees range from ${formatPrice(Math.min(...nums))} to ${formatPrice(Math.max(...nums))}:\n\n${lines}\n\nEMI is available on every program.`;
+}
+
+function withLiveDetails(rec, courses) {
+  const keys = COURSE_KEYWORDS[rec.id] || [];
+  const live = courses.find((c) => keys.some((k) => String(c.title || '').toLowerCase().includes(k)));
+  if (!live) return rec;
+  return {
+    ...rec,
+    title: live.title || rec.title,
+    price: formatPrice(live.price) || rec.price,
+    duration: live.duration ? formatDuration(live.duration) : rec.duration,
+  };
+}
 
 function BotAvatar({ className = "w-full h-full" }) {
   const containerRef = useRef(null);
@@ -129,7 +160,8 @@ function useLauncherVisibility() {
 }
 
 export default function CourseAdvisorBot() {
-  const { openEnrollment, openCounseling } = useLms();
+  const { openEnrollment, openCounseling, courses = [] } = useLms();
+  const COURSES = RECOMMENDED_COURSES.map((rec) => withLiveDetails(rec, courses));
   const setAuthModal = (m) => (m === 'enroll' ? openEnrollment() : null);
   const [isOpen, setIsOpen] = useState(false);
   const { visible: launcherVisible } = useLauncherVisibility();
@@ -229,10 +261,10 @@ export default function CourseAdvisorBot() {
 
     if (option.action?.startsWith('quiz_exp_')) {
       setQuizStep(0);
-      let matchedCourse = RECOMMENDED_COURSES[0];
-      if (option.action.includes('fs')) matchedCourse = RECOMMENDED_COURSES[1];
-      if (option.action.includes('ai')) matchedCourse = RECOMMENDED_COURSES[2];
-      if (option.action.includes('cloud')) matchedCourse = RECOMMENDED_COURSES[3];
+      let matchedCourse = COURSES[0];
+      if (option.action.includes('fs')) matchedCourse = COURSES[1];
+      if (option.action.includes('ai')) matchedCourse = COURSES[2];
+      if (option.action.includes('cloud')) matchedCourse = COURSES[3];
 
       addBotMessage(
         `Based on your selections, here is the best matched program for you (98% Match):`,
@@ -252,7 +284,7 @@ export default function CourseAdvisorBot() {
           { label: 'Take the 30-sec Match Quiz', action: 'start_quiz' },
           { label: 'How do enrollment fees work?', action: 'faq_pricing' }
         ],
-        RECOMMENDED_COURSES[0]
+        COURSES[0]
       );
       return;
     }
@@ -264,7 +296,7 @@ export default function CourseAdvisorBot() {
           { label: 'Take the 30-sec Match Quiz', action: 'start_quiz' },
           { label: 'How do enrollment fees work?', action: 'faq_pricing' }
         ],
-        RECOMMENDED_COURSES[1]
+        COURSES[1]
       );
       return;
     }
@@ -276,14 +308,14 @@ export default function CourseAdvisorBot() {
           { label: 'Take the 30-sec Match Quiz', action: 'start_quiz' },
           { label: 'How do enrollment fees work?', action: 'faq_pricing' }
         ],
-        RECOMMENDED_COURSES[2]
+        COURSES[2]
       );
       return;
     }
 
     if (option.action === 'faq_pricing') {
       addBotMessage(
-        "Tuition & Payment Options:\n\n• Flexible installment plans are available for all courses.\n• Complete career acceleration program.\n• Live mentor guidance & direct code review on every module.\n\nWould you like me to suggest a course for your background?",
+        "Tuition & Payment Options:\n\n• EMI / installment plans are available on every program.\n• Complete career acceleration program.\n• Live mentor guidance & direct code review on every module.\n\nWould you like me to suggest a course for your background?",
         [
           { label: 'Recommend a course for me', action: 'start_quiz' },
           { label: 'Register / Enroll Now', action: 'trigger_enroll' }
@@ -325,7 +357,7 @@ export default function CourseAdvisorBot() {
 
     if (lower.includes('price') || lower.includes('cost') || lower.includes('fee') || lower.includes('money')) {
       addBotMessage(
-        "Our courses range from ₹25,000 to ₹40,000 depending on the specialization duration (5 to 12 weeks).\n\n• Product Management: ₹25,000\n• Full Stack Web Dev: ₹35,000\n• AI & ML Engineering: ₹40,000\n• Cloud Architecture: ₹30,000",
+        feeSummary(courses),
         [
           { label: 'Recommend a course for me', action: 'start_quiz' },
           { label: 'Enroll Now', action: 'trigger_enroll' }
@@ -338,7 +370,7 @@ export default function CourseAdvisorBot() {
           { label: 'View PM Course', action: 'select_pm' },
           { label: 'Take Match Quiz', action: 'start_quiz' }
         ],
-        RECOMMENDED_COURSES[0]
+        COURSES[0]
       );
     } else if (lower.includes('code') || lower.includes('web') || lower.includes('dev') || lower.includes('fullstack') || lower.includes('react')) {
       addBotMessage(
@@ -347,7 +379,7 @@ export default function CourseAdvisorBot() {
           { label: 'View Fullstack Course', action: 'select_fs' },
           { label: 'Take Match Quiz', action: 'start_quiz' }
         ],
-        RECOMMENDED_COURSES[1]
+        COURSES[1]
       );
     } else if (lower.includes('ai') || lower.includes('machine learning') || lower.includes('ml') || lower.includes('python')) {
       addBotMessage(
@@ -356,7 +388,7 @@ export default function CourseAdvisorBot() {
           { label: 'View AI Course', action: 'select_ai' },
           { label: 'Take Match Quiz', action: 'start_quiz' }
         ],
-        RECOMMENDED_COURSES[2]
+        COURSES[2]
       );
     } else if (lower.includes('job') || lower.includes('career') || lower.includes('salary') || lower.includes('hiring')) {
       addBotMessage(
@@ -413,7 +445,7 @@ export default function CourseAdvisorBot() {
             transition={{ duration: 0.25 }}
             role="dialog"
             aria-label="Course advisor chat"
-            className="hide-on-overlay fixed inset-x-2 bottom-2 sm:inset-x-auto sm:right-5 sm:bottom-24 z-40 sm:w-96 h-[min(600px,calc(100dvh-5rem))] sm:h-[min(540px,calc(100dvh-8rem))] bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 flex flex-col overflow-hidden"
+            className="hide-on-overlay fixed inset-x-2 bottom-2 sm:inset-x-auto sm:right-5 sm:bottom-24 z-[60] sm:w-96 h-[min(600px,calc(100dvh-5rem))] sm:h-[min(540px,calc(100dvh-13rem))] bg-white rounded-3xl shadow-2xl ring-1 ring-slate-200 flex flex-col overflow-hidden"
           >
             {/* CHAT HEADER */}
             <div className="p-4 bg-gradient-to-r from-[#0A317B] via-[#0D41A1] to-[#1A9C9B] text-white flex items-center justify-between shrink-0 shadow-md">

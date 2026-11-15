@@ -37,7 +37,7 @@ function Newsletter() {
   };
 
   return (
-    <div className="relative mb-14 p-6 sm:p-10 rounded-3xl overflow-hidden bg-gradient-to-br from-brand-navy via-[#0B2A6B] to-brand-teal flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="relative mb-14 p-6 sm:p-10 rounded-3xl overflow-clip bg-gradient-to-br from-brand-navy via-[#0B2A6B] to-brand-teal flex flex-col lg:flex-row lg:items-center justify-between gap-6">
       <div aria-hidden className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-brand-orange/20 blur-3xl" />
       <div className="relative max-w-lg">
         <h4 className="text-xl font-black text-white">Free learning resources &amp; tech roadmaps, weekly</h4>
