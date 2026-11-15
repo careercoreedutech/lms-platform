@@ -1,3 +1,5 @@
+-- NOTE: Admin passwords now live only in Supabase Auth. Access policies for this
+-- table are replaced by supabase/migrations/002_lock_down_rls.sql.
 -- ============================================================================
 -- 1. CREATE DEDICATED ADMINS TABLE
 -- ============================================================================
@@ -6,7 +8,6 @@ CREATE TABLE IF NOT EXISTS public.admins (
     email TEXT UNIQUE NOT NULL,
     username TEXT UNIQUE NOT NULL,
     full_name TEXT NOT NULL DEFAULT 'Megaviz Admin',
-    password TEXT NOT NULL DEFAULT 'megaviz@1234',
     role TEXT NOT NULL DEFAULT 'ADMIN',
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     phone TEXT,
@@ -19,32 +20,23 @@ CREATE TABLE IF NOT EXISTS public.admins (
 -- Enable RLS
 ALTER TABLE public.admins ENABLE ROW LEVEL SECURITY;
 
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'admins' AND policyname = 'Allow public read admins') THEN
-        CREATE POLICY "Allow public read admins" ON public.admins FOR SELECT USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'admins' AND policyname = 'Allow admin management') THEN
-        CREATE POLICY "Allow admin management" ON public.admins FOR ALL USING (true) WITH CHECK (true);
-    END IF;
-END $$;
+-- (Open policies removed: they let anyone read and edit this table.)
 
 -- Move Megaviz admin from profiles to admins table
-INSERT INTO public.admins (id, email, username, full_name, password, role, status, phone, created_at)
-SELECT id, email, username, full_name, 'megaviz@1234', 'ADMIN', 'ACTIVE', phone, created_at
+INSERT INTO public.admins (id, email, username, full_name, role, status, phone, created_at)
+SELECT id, email, username, full_name, 'ADMIN', 'ACTIVE', phone, created_at
 FROM public.profiles
 WHERE role = 'ADMIN' OR username = 'megaviz'
 ON CONFLICT (email) DO UPDATE 
 SET 
   username = EXCLUDED.username,
   full_name = EXCLUDED.full_name,
-  password = 'megaviz@1234',
   role = 'ADMIN',
   status = 'ACTIVE';
 
 -- Ensure Megaviz row exists even if profiles was empty
-INSERT INTO public.admins (email, username, full_name, password, role, status)
-VALUES ('megaviz@careercore.com', 'megaviz', 'Megaviz Admin', 'megaviz@1234', 'ADMIN', 'ACTIVE')
+INSERT INTO public.admins (email, username, full_name, role, status)
+VALUES ('megaviz@careercore.com', 'megaviz', 'Megaviz Admin', 'ADMIN', 'ACTIVE')
 ON CONFLICT (email) DO NOTHING;
 
 -- Remove admin from profiles table so profiles is 100% students only

@@ -4,13 +4,25 @@ import { useLms } from '../context/LmsContext';
 import Modal, { Field, inputClass } from './ui/Modal';
 
 export default function LoginModal() {
-  const { authModal, setAuthModal, loginStudent, openEnrollment, openCounseling } = useLms();
+  const { authModal, setAuthModal, loginStudent, openEnrollment, sendPasswordReset } = useLms();
   const open = authModal === 'login';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [infoMsg, setInfoMsg] = useState(null);
+
+  const handleForgot = async () => {
+    if (!username.trim()) {
+      setInfoMsg(null);
+      setErrorMsg('Enter your username or email above, then click "Forgot password?" again.');
+      return;
+    }
+    setErrorMsg(null);
+    const res = await sendPasswordReset(username.trim());
+    setInfoMsg(res.message);
+  };
 
   useEffect(() => {
     if (open) {
@@ -18,6 +30,7 @@ export default function LoginModal() {
       setPassword('');
       setShowPassword(false);
       setErrorMsg(null);
+      setInfoMsg(null);
     }
   }, [open]);
 
@@ -56,6 +69,12 @@ export default function LoginModal() {
           </div>
         )}
 
+        {infoMsg && (
+          <div role="status" className="p-3 rounded-xl bg-teal-50 text-teal-900 text-xs font-semibold border border-teal-200 leading-relaxed">
+            {infoMsg}
+          </div>
+        )}
+
         <Field label="Username or email" required htmlFor="login-username">
           <div className="relative">
             <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -78,7 +97,7 @@ export default function LoginModal() {
           right={
             <button
               type="button"
-              onClick={() => openCounseling('Password reset')}
+              onClick={handleForgot}
               className="text-[11px] font-bold text-brand-teal hover:text-brand-navy hover:underline cursor-pointer"
             >
               Forgot password?

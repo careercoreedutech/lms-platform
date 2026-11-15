@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+
+# Auth migration output (names/emails)
+auth-migration-report.json

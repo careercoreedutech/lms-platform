@@ -396,25 +396,12 @@ export function LmsProvider({ children }) {
   const coursesRef = useRef(courses);
   coursesRef.current = courses;
 
-  const [users, setUsers] = useState(() => {
-    try {
-      localStorage.removeItem('careercore_lms_users');
-      const saved = localStorage.getItem('careercore_lms_users_v2');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      }
-    } catch (e) { console.error(e); }
-    return [];
-  });
+  // Student list: loaded from the database for signed-in admins/mentors only, never cached in the browser.
+  const [users, setUsers] = useState([]);
 
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('careercore_current_user');
-      if (saved) return JSON.parse(saved);
-    } catch { }
-    return null;
-  });
+  // Set only from a verified Supabase session (see Auth below).
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
 
   const [activeView, setActiveViewState] = useState(() => getViewFromLocation());
   // Current public-site path (used to render content pages, course pages and the 404 page)
@@ -553,18 +540,6 @@ export function LmsProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('careercore_lms_courses_v5', JSON.stringify(purgeDeadBlobUrls(courses)));
   }, [courses]);
-
-  useEffect(() => {
-    localStorage.setItem('careercore_lms_users_v2', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('careercore_current_user', JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem('careercore_current_user');
-    }
-  }, [currentUser]);
 
   // ── Helpers ────────────────────────────────────────
   const openEnrollment = (courseTitle) => {
@@ -822,12 +797,8 @@ export function LmsProvider({ children }) {
       });
     }
 
-    // Load persisted student passwords and DOBs from local cache
-    let storedStudentPasswords = {};
+    // DOBs saved by older builds before the dob column existed
     let storedStudentDobs = {};
-    try {
-      storedStudentPasswords = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
-    } catch (e) {}
     try {
       storedStudentDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
     } catch (e) {}
@@ -884,13 +855,6 @@ export function LmsProvider({ children }) {
           }
         }
 
-        // Password from Supabase profile, local mapping, or default
-        const studentPass = p.password ||
-                            storedStudentPasswords[p.id] || 
-                            storedStudentPasswords[p.username] || 
-                            storedStudentPasswords[p.email?.toLowerCase()] || 
-                            'student123';
-
         // DOB from storage or metadata
         const studentDob = storedStudentDobs[p.id] || 
                            storedStudentDobs[p.username] || 
@@ -907,7 +871,6 @@ export function LmsProvider({ children }) {
           course: resolvedCourse,
           role: p.role || 'STUDENT',
           status: validStatus,
-          password: studentPass,
           registeredAt: p.created_at
             ? new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'Recent',
@@ -923,35 +886,8 @@ export function LmsProvider({ children }) {
         };
       });
 
-    setUsers(prev => {
-      const map = new Map();
-      studentProfiles.forEach(sp => map.set(sp.email?.toLowerCase() || sp.id, sp));
-      prev.forEach(lu => {
-        const key = lu.email?.toLowerCase() || lu.id;
-        if (map.has(key)) {
-          const existing = map.get(key);
-          map.set(key, {
-            ...existing,
-            phone: existing.phone || lu.phone || '',
-            dob: existing.dob || lu.dob || storedStudentDobs[key] || '',
-            course: existing.course || lu.course || '',
-            password: existing.password || lu.password || storedStudentPasswords[key] || 'student123',
-            progress: existing.progress,
-            completedCount: existing.completedCount,
-            status: existing.status || lu.status || 'PENDING'
-          });
-        } else {
-          map.set(key, {
-            ...lu,
-            dob: lu.dob || storedStudentDobs[key] || '',
-            password: lu.password || storedStudentPasswords[key] || 'student123'
-          });
-        }
-      });
-      const merged = Array.from(map.values());
-      try { localStorage.setItem('careercore_lms_users_v2', JSON.stringify(merged)); } catch (e) {}
-      return merged;
-    });
+    // The database is the only source: no merging with browser-cached users.
+    setUsers(studentProfiles);
   }, []);
 
   // ── On Mount: Load all data from Supabase ─────────
@@ -996,8 +932,7 @@ export function LmsProvider({ children }) {
           });
         }
 
-        // 3. Load students from profiles
-        await syncUsersFromSupabase();
+        // Student list is loaded only after an admin or mentor signs in (see Auth below).
 
         // 4. Load verified feedbacks from Supabase
         try {
@@ -1033,41 +968,6 @@ export function LmsProvider({ children }) {
 
     bootstrapFromSupabase();
 
-    // Listen for Supabase auth session changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
-        const meta = session.user.user_metadata || {};
-        // Look up profile for additional data like course, phone
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle();
-        const role = profile?.role || meta.role || 'STUDENT';
-        const status = 'APPROVED';
-        // If student is registered, auto-approve them so they aren't locked out on reload
-        if (role === 'STUDENT' && profile?.status !== 'APPROVED') {
-          safeSupabase('auto approve student session', () =>
-            supabase.from('profiles').update({ status: 'APPROVED' }).eq('id', session.user.id)
-          );
-        }
-
-        let studentCourse = profile?.course || meta.course || '';
-        if (!studentCourse) {
-          const { data: en } = await supabase.from('enrollments').select('courses(title)').eq('student_id', session.user.id).maybeSingle();
-          if (en?.courses?.title) studentCourse = en.courses.title;
-        }
-
-        setCurrentUser({
-          id: session.user.id,
-          name: profile?.full_name || meta.full_name || session.user.email?.split('@')[0],
-          email: session.user.email,
-          username: profile?.username || meta.username || session.user.email?.split('@')[0],
-          phone: profile?.phone || meta.phone || '',
-          course: studentCourse,
-          role,
-          status
-        });
-      }
-    });
-
-    return () => subscription?.unsubscribe();
   }, []);
 
   // ── createCourse ───────────────────────────────────
@@ -1157,460 +1057,280 @@ export function LmsProvider({ children }) {
     );
   };
 
+  // ── Auth ───────────────────────────────────────────
+  // Supabase Auth is the only source of truth for who is signed in.
+  // The role comes from the database (get_my_role), never from the browser.
+
+  const VIEW_FOR_ROLE = { ADMIN: 'admin', MENTOR: 'mentor', STUDENT: 'portal' };
+
+  // Turns a Supabase session into the app's currentUser. Returns null (and signs out)
+  // for accounts with no role: unknown, rejected students, mentors on leave.
+  const loadUserForSession = useCallback(async (session) => {
+    const authUser = session?.user;
+    if (!authUser) {
+      setCurrentUser(null);
+      return null;
+    }
+
+    const { data: role, error: roleErr } = await supabase.rpc('get_my_role');
+    if (roleErr || !role) {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      return null;
+    }
+
+    const meta = authUser.user_metadata || {};
+    let user;
+
+    if (role === 'ADMIN') {
+      const { data: a } = await supabase
+        .from('admins')
+        .select('id, username, full_name, email')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
+      user = {
+        id: authUser.id,
+        adminId: a?.id,
+        name: a?.full_name || a?.username || 'Administrator',
+        username: a?.username || '',
+        email: a?.email || authUser.email,
+        role: 'ADMIN'
+      };
+    } else if (role === 'MENTOR') {
+      const { data: m } = await supabase
+        .from('mentors')
+        .select('*')
+        .eq('auth_user_id', authUser.id)
+        .maybeSingle();
+      user = {
+        id: m?.id || authUser.id,
+        authUserId: authUser.id,
+        name: m?.name || meta.full_name || 'Mentor',
+        username: (m?.name || '').toLowerCase().replace(/\s+/g, '_'),
+        email: m?.email || '',
+        role: 'MENTOR',
+        company: m?.company || '',
+        course: m?.course || '',
+        avatar: m?.avatar || '',
+        rating: m?.rating || 4.9,
+        reviewsCount: m?.reviews_count || 100,
+        mentees: m?.mentees_count || 150,
+        status: m?.status || 'Active'
+      };
+    } else {
+      const { data: p } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+      let studentCourse = p?.course || meta.course || '';
+      if (!studentCourse) {
+        const { data: en } = await supabase
+          .from('enrollments')
+          .select('courses(title)')
+          .eq('student_id', authUser.id)
+          .limit(1)
+          .maybeSingle();
+        if (en?.courses?.title) studentCourse = en.courses.title;
+      }
+      user = {
+        id: authUser.id,
+        name: p?.full_name || meta.full_name || authUser.email?.split('@')[0],
+        email: authUser.email,
+        username: p?.username || meta.username || authUser.email?.split('@')[0],
+        phone: p?.phone || meta.phone || '',
+        dob: p?.dob || meta.dob || '',
+        course: studentCourse || 'Full Stack Web Dev',
+        role: 'STUDENT',
+        status: 'APPROVED',
+        progressPercent: p?.progress_percent || 0,
+        completedLessons: p?.completed_lessons || 0,
+        totalLessons: p?.total_lessons || 2,
+        completedWeeks: p?.completed_weeks || 0,
+        currentWeek: p?.current_week || 1
+      };
+    }
+
+    user.mustResetPassword = !!meta.must_reset_password;
+    setCurrentUser(user);
+    return user;
+  }, []);
+
+  // While signIn/registerStudent load the user themselves, the auth listener stays out of the way.
+  const signingInRef = useRef(false);
+
+  const signIn = async (identifier = '', password = '', expectedRole = null) => {
+    const id = (identifier || '').trim();
+    const pw = password || '';
+    if (!id || !pw) {
+      return { success: false, message: 'Please enter your username (or email) and password.' };
+    }
+
+    signingInRef.current = true;
+    try {
+      const { data: email, error: lookupErr } = await supabase.rpc('login_email_for', { identifier: id });
+      if (lookupErr) {
+        return { success: false, message: 'Could not reach the server. Please try again.' };
+      }
+      if (!email) {
+        return { success: false, message: 'Incorrect username or password.' };
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error || !data?.session) {
+        if (error && /confirm/i.test(error.message)) {
+          return { success: false, message: 'Please confirm your email address first (check your inbox), then log in.' };
+        }
+        return { success: false, message: 'Incorrect username or password.' };
+      }
+
+      const user = await loadUserForSession(data.session);
+      if (!user) {
+        return { success: false, message: 'This account does not have access. Please contact the administrator.' };
+      }
+      if (expectedRole && user.role !== expectedRole && user.role !== 'ADMIN') {
+        await supabase.auth.signOut();
+        setCurrentUser(null);
+        return { success: false, message: 'This account does not have access to this portal.' };
+      }
+
+      setActiveView(expectedRole ? VIEW_FOR_ROLE[expectedRole] : VIEW_FOR_ROLE[user.role]);
+      setAuthModal(null);
+      return { success: true, role: user.role };
+    } finally {
+      signingInRef.current = false;
+    }
+  };
+
+  // Main login box: opens whichever portal the account belongs to.
+  const loginStudent = (identifier, password) => signIn(identifier, password);
+  const loginAdmin = (identifier, password) => signIn(identifier, password, 'ADMIN');
+  const loginMentor = (identifier, password) => signIn(identifier, password, 'MENTOR');
+  const loginTeacher = loginMentor;
+
   // ── registerStudent ────────────────────────────────
+  // The database trigger creates the profile and first enrollment.
   const registerStudent = async (studentData = {}) => {
-    const name = studentData.name || '';
-    const email = studentData.email || '';
-    const phone = studentData.phone || '';
-    const dob = studentData.dob || '';
-    const username = studentData.username || email.split('@')[0] || `user_${Date.now()}`;
+    const email = (studentData.email || '').trim().toLowerCase();
     const password = studentData.password || '';
-    const course = studentData.course || '';
-    const mode = studentData.mode || 'Interactive';
-    const notes = studentData.notes || '';
+    const username = (studentData.username || email.split('@')[0] || '').trim().toLowerCase();
+    if (!email) return { success: false, message: 'Please enter your email address.' };
+    if (password.length < 8) return { success: false, message: 'Password must be at least 8 characters.' };
 
-    const newUser = {
-      id: `u_${Date.now()}`,
-      name,
-      email,
-      phone,
-      dob,
-      username,
-      password,
-      course,
-      mode,
-      enrolledAt: new Date().toISOString().split('T')[0],
-      registeredAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'APPROVED',
-      progress: 0,
-      notes,
-      completedLessons: []
-    };
+    const { data: taken } = await supabase.rpc('login_email_for', { identifier: username });
+    if (taken && taken !== email) {
+      return { success: false, message: 'That username is already taken. Please choose another.' };
+    }
 
-    // Save password in persistent admin cache
+    signingInRef.current = true;
     try {
-      const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
-      if (password) {
-        stored[newUser.id] = password;
-        if (email) stored[email.toLowerCase()] = password;
-        if (username) stored[username.toLowerCase()] = password;
-        localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
-      }
-    } catch (e) {}
-
-    // Save DOB in persistent admin cache
-    try {
-      const storedDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
-      if (dob) {
-        storedDobs[newUser.id] = dob;
-        if (email) storedDobs[email.toLowerCase()] = dob;
-        if (username) storedDobs[username.toLowerCase()] = dob;
-        localStorage.setItem('careercore_student_dobs', JSON.stringify(storedDobs));
-      }
-    } catch (e) {}
-
-    setUsers(prev => [newUser, ...prev]);
-
-    // Register in Supabase auth + write profile
-    let supabaseUserId = null;
-    try {
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/portal`,
           data: {
-            full_name: name,
-            phone,
-            dob,
+            full_name: studentData.name || '',
+            phone: studentData.phone || '',
+            dob: studentData.dob || '',
             username,
-            course,
-            mode,
-            role: 'STUDENT',
-            status: 'APPROVED'
+            course: studentData.course || '',
+            mode: studentData.mode || 'Interactive'
           }
         }
       });
 
-      if (!authErr && authData?.user?.id) {
-        supabaseUserId = authData.user.id;
-      } else {
-        // Fallback if auth.signUp errored or email already registered
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .or(`email.ilike.${email},username.ilike.${username}`)
-          .maybeSingle();
-        if (existingProfile?.id) {
-          supabaseUserId = existingProfile.id;
-        } else if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-          supabaseUserId = crypto.randomUUID();
+      if (error) {
+        if (/registered|exists/i.test(error.message)) {
+          return { success: false, message: 'An account with this email already exists. Please log in instead.' };
         }
+        return { success: false, message: error.message };
       }
 
-      if (supabaseUserId) {
-        // Update persistent caches with real Supabase id
-        try {
-          const storedDobs = JSON.parse(localStorage.getItem('careercore_student_dobs') || '{}');
-          if (dob) {
-            storedDobs[supabaseUserId] = dob;
-            localStorage.setItem('careercore_student_dobs', JSON.stringify(storedDobs));
-          }
-        } catch (e) {}
-        try {
-          const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
-          if (password) {
-            stored[supabaseUserId] = password;
-            localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
-          }
-        } catch (e) {}
-
-        // Update local state with real Supabase id
-        setUsers(prev => {
-          const updated = prev.map(u => u.id === newUser.id ? { ...u, id: supabaseUserId } : u);
-          try { localStorage.setItem('careercore_lms_users_v2', JSON.stringify(updated)); } catch (e) {}
-          return updated;
-        });
-
-        // Write/update profile row in Supabase
-        const targetCourseObj = courses.find(c => c.title === course) || courses[0];
-        const targetTotalLessons = targetCourseObj?.totalCount || 
-          (targetCourseObj?.sections ? targetCourseObj.sections.reduce((acc, s) => acc + (s.items?.length || 0), 0) : 1);
-
-        const baseProfile = {
-          id: supabaseUserId,
-          email,
-          full_name: name,
-          username,
-          password: password || 'student123',
-          phone,
-          course: course || targetCourseObj?.title || 'Full Stack Web Dev',
-          progress_percent: 0,
-          completed_lessons: 0,
-          total_lessons: targetTotalLessons,
-          completed_weeks: 0,
-          current_week: 1,
-          role: 'STUDENT',
-          status: 'APPROVED',
-          updated_at: new Date().toISOString()
-        };
-
-        // Try upserting with dob and progress columns
-        let profileRes = await safeSupabase('registerStudent profile with dob', () =>
-          supabase.from('profiles').upsert({
-            ...baseProfile,
-            ...(dob ? { dob } : {})
-          }, { onConflict: 'id' })
-        );
-
-        // Fallback with password
-        if (profileRes?.error) {
-          await safeSupabase('registerStudent profile fallback', () =>
-            supabase.from('profiles').upsert({
-              id: supabaseUserId,
-              email,
-              full_name: name,
-              username,
-              password: password || 'student123',
-              phone,
-              role: 'STUDENT',
-              status: 'APPROVED',
-              updated_at: new Date().toISOString()
-            }, { onConflict: 'id' })
-          );
-        }
-
-        // Write enrollment row (status must be 'ACTIVE' per DB check constraint)
-        const courseObj = courses.find(c => c.title === course) || courses[0];
-        if (courseObj?.id) {
-          await safeSupabase('registerStudent enrollment', () =>
-            supabase.from('enrollments').insert({
-              student_id: supabaseUserId,
-              course_id: courseObj.id,
-              status: 'ACTIVE',
-              enrolled_at: new Date().toISOString()
-            })
-          );
-        }
-
-        // Auto-login registered student directly into their workspace
-        const activeStudent = {
-          id: supabaseUserId,
-          name,
-          email,
-          username,
-          phone,
-          dob,
-          course: course || targetCourseObj?.title || 'Full Stack Web Dev',
-          role: 'STUDENT',
-          status: 'APPROVED',
-          password: password || 'student123',
-          progressPercent: 0,
-          completedLessons: 0,
-          totalLessons: targetTotalLessons,
-          completedWeeks: 0,
-          currentWeek: 1
-        };
-        setCurrentUser(activeStudent);
-        setActiveView('portal');
-        setAuthModal(null);
-      }
-    } catch (e) {
-      console.warn('[Supabase registerStudent]', e);
-    }
-
-    return { success: true, message: 'Registration submitted! Your application is pending Admin Approval.' };
-  };
-
-  // ── loginStudent ───────────────────────────────────
-  const loginStudent = async (usernameOrEmail = '', password = '') => {
-    const cleanUser = (usernameOrEmail || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
-
-    // Auto-detect admin credentials
-    if (cleanUser === 'megaviz' || cleanUser === 'admin') {
-      return loginAdmin(cleanUser, cleanPass);
-    }
-
-    if (
-      (cleanUser === 'teacher' || cleanUser === 'instructor') &&
-      (!cleanPass || ['teacher123', 'password123'].includes(cleanPass))
-    ) {
-      return loginTeacher('teacher', 'teacher123');
-    }
-
-    // 1. Primary Live Database Query: Fetch directly from Supabase profiles
-    try {
-      const { data: dbProfile, error: dbErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .or(`username.ilike.${cleanUser},email.ilike.${cleanUser}`)
-        .maybeSingle();
-
-      if (!dbErr && dbProfile) {
-        const rawStatus = (dbProfile.status || '').trim().toUpperCase();
-        const studentStatus = ['APPROVED', 'REJECTED', 'PENDING'].includes(rawStatus) ? rawStatus : 'PENDING';
-
-        if (studentStatus === 'PENDING') {
-          // Auto-promote registered student to APPROVED for instant access
-          safeSupabase('auto approve on login', () =>
-            supabase.from('profiles').update({ status: 'APPROVED' }).eq('id', dbProfile.id)
-          );
-        }
-        if (studentStatus === 'REJECTED') {
-          return {
-            success: false,
-            message: 'Your account registration was not approved by the administrator.'
-          };
-        }
-
-        // Expected password: from Supabase profile, local storage mapping, or default 'student123'
-        let localPass = '';
-        try {
-          const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
-          localPass = stored[dbProfile.id] || stored[dbProfile.username] || stored[dbProfile.email?.toLowerCase()] || '';
-        } catch {}
-
-        const expectedDbPass = (dbProfile.password && dbProfile.password.trim()) || localPass || 'student123';
-        const uClean = (dbProfile.username || '').toLowerCase();
-        const isPassValid = (cleanPass === expectedDbPass) || 
-                            (cleanPass === 'student123') ||
-                            (cleanPass === 'password123') ||
-                            (cleanPass === 'student') ||
-                            (uClean && cleanPass === uClean) ||
-                            (uClean && cleanPass === `${uClean}123`) ||
-                            (uClean && cleanPass === `${uClean}@123`);
-
-        if (!isPassValid) {
-          return { success: false, message: 'Incorrect password. Please verify your credentials and try again.' };
-        }
-
-        const userObj = {
-          id: dbProfile.id,
-          name: dbProfile.full_name || dbProfile.username || dbProfile.email?.split('@')[0],
-          email: dbProfile.email,
-          username: dbProfile.username || dbProfile.email?.split('@')[0],
-          phone: dbProfile.phone || '',
-          dob: dbProfile.dob || '',
-          course: dbProfile.course || 'Full Stack Web Dev',
-          role: 'STUDENT',
-          status: 'APPROVED',
-          password: expectedDbPass,
-          progressPercent: dbProfile.progress_percent || 0,
-          completedLessons: dbProfile.completed_lessons || 0,
-          totalLessons: dbProfile.total_lessons || 2,
-          completedWeeks: dbProfile.completed_weeks || 0,
-          currentWeek: dbProfile.current_week || 1
-        };
-
-        setCurrentUser(userObj);
-        setActiveView('portal');
-        setAuthModal(null);
-        return { success: true };
-      }
-    } catch (e) {
-      console.warn('[Supabase direct loginStudent notice]', e);
-    }
-
-    // 2. Secondary Fallback: In-memory/localStorage users
-    const found = users.find(u =>
-      u.username?.trim().toLowerCase() === cleanUser ||
-      u.email?.trim().toLowerCase() === cleanUser
-    );
-
-    if (found) {
-      const expectedPass = (found.password && found.password.trim()) || 'student123';
-      const uClean = (found.username || '').toLowerCase();
-      const isPassValid = (cleanPass === expectedPass) || 
-                          (cleanPass === 'student123') ||
-                          (cleanPass === 'password123') ||
-                          (cleanPass === 'student') ||
-                          (uClean && cleanPass === uClean) ||
-                          (uClean && cleanPass === `${uClean}123`) ||
-                          (uClean && cleanPass === `${uClean}@123`);
-
-      if (!isPassValid) {
-        return { success: false, message: 'Incorrect password. Please verify your credentials and try again.' };
-      }
-      if (found.status === 'PENDING') {
-        found.status = 'APPROVED';
-      }
-      if (found.status === 'REJECTED') {
-        return { success: false, message: 'Your account registration was not approved by the administrator.' };
-      }
-      setCurrentUser({ ...found, role: 'STUDENT', status: 'APPROVED' });
-      setActiveView('portal');
-      setAuthModal(null);
-      return { success: true };
-    }
-
-    return {
-      success: false,
-      message: `No student account found for "${cleanUser}". Please verify your credentials or register.`
-    };
-  };
-
-  // ── loginAdmin (Dedicated Supabase admins table) ───
-  const loginAdmin = async (username = '', password = '') => {
-    const cleanUser = (username || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
-    if (!cleanUser || !cleanPass) {
-      return { success: false, message: 'Please enter your administrator username and password.' };
-    }
-
-    try {
-      // 1. Query dedicated Supabase admins table
-      const { data: dbAdmin, error } = await supabase
-        .from('admins')
-        .select('*')
-        .or(`username.ilike.${cleanUser},email.ilike.${cleanUser}`)
-        .maybeSingle();
-
-      if (!error && dbAdmin) {
-        const expectedPass = dbAdmin.password || 'megaviz@1234';
-        if (cleanPass === expectedPass || cleanPass === 'megaviz@1234') {
-          setCurrentUser({
-            id: dbAdmin.id,
-            name: dbAdmin.full_name || dbAdmin.username || 'Administrator',
-            username: dbAdmin.username,
-            role: 'ADMIN',
-            email: dbAdmin.email
-          });
-          setActiveView('admin');
+      if (data?.session) {
+        const user = await loadUserForSession(data.session);
+        if (user) {
+          setActiveView('portal');
           setAuthModal(null);
-          return { success: true };
         }
-        return { success: false, message: 'Invalid administrator password. Access Denied.' };
+        return { success: true, message: 'Registration complete! Welcome to CareerCore.' };
+      }
+
+      return {
+        success: true,
+        message: 'Almost done! We sent a confirmation link to your email. Click it, then log in.'
+      };
+    } finally {
+      signingInRef.current = false;
+    }
+  };
+
+  // ── Password self-service ──────────────────────────
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
+
+  const changeOwnPassword = async (newPassword = '') => {
+    if (newPassword.length < 8) {
+      return { success: false, message: 'Password must be at least 8 characters.' };
+    }
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+      data: { must_reset_password: false }
+    });
+    if (error) return { success: false, message: error.message };
+    setPasswordRecovery(false);
+    setCurrentUser(prev => (prev ? { ...prev, mustResetPassword: false } : prev));
+    return { success: true };
+  };
+
+  // Always answers the same way, so it can't be used to discover accounts.
+  const sendPasswordReset = async (identifier = '') => {
+    const genericMessage = 'If an account exists for that username or email, a reset link is on its way.';
+    try {
+      const { data: email } = await supabase.rpc('login_email_for', { identifier: identifier.trim() });
+      if (email && !email.endsWith('.invalid')) {
+        await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/portal` });
       }
     } catch (e) {}
-
-    // 2. Fallback check
-    const validUser = cleanUser === 'megaviz' || cleanUser === 'admin';
-    const validPass = ['megaviz@1234', 'admin123'].includes(cleanPass);
-    if (validUser && validPass) {
-      setCurrentUser({ name: 'megaviz', username: 'megaviz', role: 'ADMIN', email: 'megaviz@careercore.com' });
-      setActiveView('admin');
-      setAuthModal(null);
-      return { success: true };
-    }
-    return { success: false, message: 'Invalid administrator credentials. Access Denied.' };
+    return { success: true, message: genericMessage };
   };
 
-  // ── loginMentor (Database-Verified Mentors Only) ──
-  const loginMentor = async (identifier = '', password = '') => {
-    const cleanId = (identifier || '').trim().toLowerCase();
-    const cleanPass = (password || '').trim();
-    if (!cleanId) {
-      return { success: false, message: 'Please enter your registered Mentor Name or Email.' };
-    }
-    if (!cleanPass) {
-      return { success: false, message: 'Please enter your Mentor Password.' };
-    }
-
+  // Restore the session on load and follow sign-in/out in other tabs.
+  useEffect(() => {
+    // Old builds kept users, passwords and a trusted role in localStorage. Remove them.
     try {
-      // 1. Fetch live mentors from Supabase mentors table
-      const { data: dbMentors, error } = await supabase.from('mentors').select('*');
-      if (error || !dbMentors || dbMentors.length === 0) {
-        return { success: false, message: 'No mentors found in the database. Please contact the administrator.' };
+      ['careercore_current_user', 'careercore_lms_users', 'careercore_lms_users_v2',
+       'careercore_student_passwords', 'careercore_mentor_passwords']
+        .forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+
+    supabase.auth.getSession().then(({ data }) => {
+      loadUserForSession(data?.session).finally(() => setAuthReady(true));
+    });
+
+    // Supabase advises against awaiting Supabase calls inside this callback, hence setTimeout.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+        setUsers([]);
+        return;
       }
-
-      // 2. Strictly verify that mentor exists in the database
-      const matched = dbMentors.find(m => 
-        (m.name && m.name.trim().toLowerCase() === cleanId) ||
-        (m.id && m.id.toLowerCase() === cleanId) ||
-        (m.company && m.company.trim().toLowerCase() === cleanId) ||
-        (m.email && m.email.trim().toLowerCase() === cleanId)
-      );
-
-      if (!matched) {
-        return { 
-          success: false, 
-          message: `Access Denied: "${identifier}" is not found in the verified mentors database roster.` 
-        };
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true);
       }
-
-      // 3. Verify password (checks database password column, local cache, or default)
-      const localPasswords = JSON.parse(localStorage.getItem('careercore_mentor_passwords') || '{}');
-      const expectedPassword = matched.password || localPasswords[matched.id] || 'mentor123';
-      const mentorFirstName = matched.name?.toLowerCase().split(' ')[0] || '';
-      const validPass = (cleanPass === expectedPassword) || 
-        ['mentor123', 'teacher123', mentorFirstName, `${mentorFirstName}123`].includes(cleanPass.toLowerCase());
-
-      if (!validPass) {
-        return { success: false, message: 'Invalid mentor password. Please check your credentials.' };
+      if ((event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') && !signingInRef.current) {
+        setTimeout(() => loadUserForSession(session), 0);
       }
+    });
 
-      if (matched.status && matched.status.toLowerCase() === 'on leave') {
-        return {
-          success: false,
-          message: `Mentor account for "${matched.name}" is currently marked "On Leave". Please contact admin to activate.`
-        };
-      }
+    return () => subscription?.unsubscribe();
+  }, [loadUserForSession]);
 
-      const mentorProfile = {
-        id: matched.id,
-        name: matched.name,
-        username: matched.name.toLowerCase().replace(/\s+/g, '_'),
-        role: 'MENTOR',
-        company: matched.company || '',
-        course: matched.course || '',
-        avatar: matched.avatar || '',
-        rating: matched.rating || 4.9,
-        reviewsCount: matched.reviews_count || 100,
-        mentees: matched.mentees_count || 150,
-        status: matched.status || 'Active'
-      };
-
-      setCurrentUser(mentorProfile);
-      setActiveView('mentor');
-      setAuthModal(null);
-      return { success: true, mentor: matched };
-    } catch (err) {
-      return { success: false, message: 'Database connection error: ' + (err?.message || err) };
+  // Staff see the student list; students and visitors never load it.
+  useEffect(() => {
+    if (currentUser?.role === 'ADMIN' || currentUser?.role === 'MENTOR') {
+      syncUsersFromSupabase();
     }
-  };
-
-  // Backward compatibility alias for loginTeacher
-  const loginTeacher = (username = '', password = '') => loginMentor(username, password);
+  }, [currentUser?.role, currentUser?.id, syncUsersFromSupabase]);
 
   // ── approveUser ────────────────────────────────────
   const approveUser = async (userId) => {
@@ -1630,73 +1350,59 @@ export function LmsProvider({ children }) {
     // Enrollment status is tracked via profiles.status; no separate enrollment update needed
   };
 
+  // ── Admin account actions (server-side, Edge Function "admin-users") ──
+  const callAdminFunction = async (body) => {
+    const { data, error } = await supabase.functions.invoke('admin-users', { body });
+    if (error) {
+      let message = error.message;
+      try {
+        const detail = await error.context?.json?.();
+        if (detail?.error) message = detail.error;
+      } catch (e) {}
+      return { success: false, message };
+    }
+    if (data?.error) return { success: false, message: data.error };
+    return { ...data, success: data?.ok !== false };
+  };
+
   // ── deleteUser ─────────────────────────────────────
   const deleteUser = async (userId) => {
-    setUsers(prev => prev.filter(u => u.id !== userId));
-    await safeSupabase('deleteUser enrollments', () =>
-      supabase.from('enrollments').delete().eq('student_id', userId)
-    );
-    await safeSupabase('deleteUser progress', () =>
-      supabase.from('student_progress').delete().eq('student_id', userId)
-    );
-    await safeSupabase('deleteUser profile', () =>
-      supabase.from('profiles').delete().eq('id', userId)
-    );
+    const res = await callAdminFunction({ action: 'delete_users', ids: [userId] });
+    if (res.success) setUsers(prev => prev.filter(u => u.id !== userId));
+    return res;
   };
 
   // ── deleteAllStudents ──────────────────────────────
   const deleteAllStudents = async () => {
-    setUsers([]);
-    try {
-      localStorage.removeItem('careercore_lms_users_v2');
-      localStorage.removeItem('careercore_lms_users');
-    } catch (e) {}
-    // Delete all non-admin profiles
-    const { data: allProfiles } = await safeSupabase('deleteAll profiles fetch', () =>
-      supabase.from('profiles').select('id').neq('role', 'ADMIN')
-    );
-    const ids = (allProfiles || []).map(p => p.id);
-    if (ids.length > 0) {
-      await safeSupabase('deleteAll enrollments', () =>
-        supabase.from('enrollments').delete().in('student_id', ids)
-      );
-      await safeSupabase('deleteAll progress', () =>
-        supabase.from('student_progress').delete().in('student_id', ids)
-      );
-      await safeSupabase('deleteAll profiles', () =>
-        supabase.from('profiles').delete().neq('role', 'ADMIN')
-      );
-    }
+    const ids = users.filter(u => (u.role || 'STUDENT').toUpperCase() === 'STUDENT').map(u => u.id);
+    if (ids.length === 0) return { success: true };
+    const res = await callAdminFunction({ action: 'delete_users', ids });
+    await syncUsersFromSupabase();
+    return res;
   };
 
   // ── logout ─────────────────────────────────────────
   const logout = async () => {
     await safeSupabase('logout', () => supabase.auth.signOut());
     setCurrentUser(null);
+    setUsers([]);
     setActiveView('landing');
   };
 
-  // ── updateStudentPassword ───────────────────────────
+  // ── Passwords set by an admin (user must change it at next login) ──
   const updateStudentPassword = async (userId, newPassword) => {
-    const cleanPass = (newPassword || '').trim();
-    if (!cleanPass) return { success: false, message: 'Password cannot be empty' };
-
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, password: cleanPass } : u));
-    try {
-      const stored = JSON.parse(localStorage.getItem('careercore_student_passwords') || '{}');
-      stored[userId] = cleanPass;
-      localStorage.setItem('careercore_student_passwords', JSON.stringify(stored));
-    } catch (e) {}
-
-    const res = await safeSupabase('updateStudentPassword', () =>
-      supabase.from('profiles').update({ password: cleanPass, updated_at: new Date().toISOString() }).eq('id', userId)
-    );
-
-    if (res?.error) {
-      return { success: false, message: res.error.message };
-    }
-    return { success: true };
+    const password = (newPassword || '').trim();
+    if (password.length < 8) return { success: false, message: 'Password must be at least 8 characters.' };
+    return callAdminFunction({ action: 'set_password', kind: 'student', id: userId, password });
   };
+
+  const setMentorPassword = async (mentorId, newPassword) => {
+    const password = (newPassword || '').trim();
+    if (password.length < 8) return { success: false, message: 'Password must be at least 8 characters.' };
+    return callAdminFunction({ action: 'set_password', kind: 'mentor', id: mentorId, password });
+  };
+
+  const deleteMentorAccount = (mentorId) => callAdminFunction({ action: 'delete_mentor', id: mentorId });
 
   // ── Context Value ──────────────────────────────────
   return (
@@ -1727,6 +1433,12 @@ export function LmsProvider({ children }) {
       rejectUser,
       deleteUser,
       updateStudentPassword,
+      setMentorPassword,
+      deleteMentorAccount,
+      changeOwnPassword,
+      sendPasswordReset,
+      passwordRecovery,
+      authReady,
       deleteAllStudents,
       syncUsersFromSupabase,
       feedbacks,

@@ -15,6 +15,7 @@ import EnrollmentModal from './components/EnrollmentModal';
 import LoginModal from './components/LoginModal';
 import CourseAdvisorBot from './components/CourseAdvisorBot';
 import CounselingModal from './components/CounselingModal';
+import PasswordChangeModal from './components/PasswordChangeModal';
 import FaqSection from './components/FaqSection';
 import DashboardPreview from './components/DashboardPreview';
 import InfoPage from './components/pages/InfoPage';
@@ -67,7 +68,7 @@ function HomePage() {
 }
 
 function MainContent() {
-  const { activeView, currentPath, courses = [] } = useLms();
+  const { activeView, currentPath, courses = [], authReady } = useLms();
   const route = resolveRoute(currentPath, courses);
 
   // Scroll to #hash on first load (e.g. /#courses)
@@ -124,6 +125,11 @@ function MainContent() {
       siteReady={siteReady}
     />
   ) : null;
+
+  // Wait for the saved session to be verified before showing a portal (or its login form).
+  if (activeView !== 'landing' && !authReady) {
+    return <PortalLoader title="Checking your session..." />;
+  }
 
   if (activeView === 'portal') {
     return (
@@ -199,6 +205,7 @@ export default function App() {
     <ErrorBoundary>
       <LmsProvider>
         <MainContent />
+        <PasswordChangeModal />
       </LmsProvider>
     </ErrorBoundary>
   );

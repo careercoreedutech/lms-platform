@@ -94,7 +94,7 @@ const PRESET_MENTOR_AVATARS = [
 ];
 
 export default function AdminPanel() {
-  const { users, courses, approveUser, rejectUser, deleteUser, updateStudentPassword, deleteAllStudents, syncUsersFromSupabase, createCourse, deleteCourse, logout, setActiveView, currentUser, loginAdmin } = useLms();
+  const { users, courses, approveUser, rejectUser, deleteUser, updateStudentPassword, setMentorPassword, deleteMentorAccount, deleteAllStudents, syncUsersFromSupabase, createCourse, deleteCourse, logout, setActiveView, currentUser, loginAdmin } = useLms();
   
   // Admin Authentication State
   const [adminUsername, setAdminUsername] = useState('');
@@ -134,25 +134,6 @@ export default function AdminPanel() {
   const [mentorsLoading, setMentorsLoading] = useState(true);
   const [showMentorModal, setShowMentorModal] = useState(false);
   const [showFormPassword, setShowFormPassword] = useState(false);
-  const [visiblePasswords, setVisiblePasswords] = useState({});
-  const [copiedPasswordMentorId, setCopiedPasswordMentorId] = useState(null);
-
-  // Student password visibility state & copy handler
-  const [visibleStudentPasswords, setVisibleStudentPasswords] = useState({});
-  const [copiedPasswordStudentId, setCopiedPasswordStudentId] = useState(null);
-
-  const toggleStudentPasswordVisibility = (studentId) => {
-    setVisibleStudentPasswords(prev => ({
-      ...prev,
-      [studentId]: !prev[studentId]
-    }));
-  };
-
-  const handleCopyStudentPassword = (studentId, pass) => {
-    navigator.clipboard?.writeText(pass || 'student123');
-    setCopiedPasswordStudentId(studentId);
-    setTimeout(() => setCopiedPasswordStudentId(null), 2000);
-  };
 
   // Student Password Reset Modal State & Handler
   const [editingPasswordStudent, setEditingPasswordStudent] = useState(null);
@@ -161,14 +142,15 @@ export default function AdminPanel() {
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
   const [passwordUpdateError, setPasswordUpdateError] = useState('');
 
-  const handleOpenPasswordModal = (user, pass) => {
+  // Sets a temporary password; the person must choose a new one at next login.
+  const handleOpenPasswordModal = (user, kind = 'student') => {
     setEditingPasswordStudent({
       id: user.id,
       name: user.name,
       username: user.username,
-      currentPass: pass || 'student123'
+      kind
     });
-    setNewStudentPasswordInput(pass || 'student123');
+    setNewStudentPasswordInput('');
     setPasswordUpdateSuccess(false);
     setPasswordUpdateError('');
   };
@@ -179,7 +161,9 @@ export default function AdminPanel() {
     setUpdatingPassword(true);
     setPasswordUpdateError('');
     try {
-      const res = await updateStudentPassword(editingPasswordStudent.id, newStudentPasswordInput.trim());
+      const res = editingPasswordStudent.kind === 'mentor'
+        ? await setMentorPassword(editingPasswordStudent.id, newStudentPasswordInput.trim())
+        : await updateStudentPassword(editingPasswordStudent.id, newStudentPasswordInput.trim());
       if (res?.success) {
         setPasswordUpdateSuccess(true);
         setTimeout(() => {
@@ -194,19 +178,6 @@ export default function AdminPanel() {
     } finally {
       setUpdatingPassword(false);
     }
-  };
-
-  const togglePasswordVisibility = (mentorId) => {
-    setVisiblePasswords(prev => ({
-      ...prev,
-      [mentorId]: !prev[mentorId]
-    }));
-  };
-
-  const handleCopyPassword = (mentorId, pass) => {
-    navigator.clipboard?.writeText(pass);
-    setCopiedPasswordMentorId(mentorId);
-    setTimeout(() => setCopiedPasswordMentorId(null), 2000);
   };
 
   const MENTOR_MONTHS = [
@@ -248,7 +219,7 @@ export default function AdminPanel() {
     company: '',
     companyMode: 'preset', // 'preset' | 'custom'
     course: 'Full Stack Web Development',
-    password: 'mentor123',
+    password: '',
     avatar: PRESET_MENTOR_AVATARS[0],
     rating: 4.9,
     reviewsCount: 120,
@@ -268,7 +239,7 @@ export default function AdminPanel() {
     async function loadMentorsFromSupabase() {
       try {
         const deletedIds = JSON.parse(localStorage.getItem('careercore_deleted_mentor_ids') || '[]');
-        const localPasswords = JSON.parse(localStorage.getItem('careercore_mentor_passwords') || '{}');
+        localStorage.removeItem('careercore_mentor_passwords');
         const localDobs = JSON.parse(localStorage.getItem('careercore_mentor_dobs') || '{}');
         const { data, error } = await supabase.from('mentors').select('*');
         if (!error && data) {
@@ -277,7 +248,7 @@ export default function AdminPanel() {
             .map(m => ({
               ...m,
               dob: m.dob || localDobs[m.id] || localDobs[m.name?.trim().toLowerCase()] || '',
-              password: m.password || localPasswords[m.id] || 'mentor123',
+              password: undefined,
               reviewsCount: m.reviews_count ?? m.reviewsCount ?? 100,
               mentees: m.mentees_count ?? m.mentees ?? 150
             }));
@@ -435,7 +406,7 @@ export default function AdminPanel() {
       company: '',
       companyMode: 'preset',
       course: courses[0]?.title || 'Full Stack Web Development',
-      password: 'mentor123',
+      password: '',
       avatar: PRESET_MENTOR_AVATARS[0],
       rating: 4.9,
       reviewsCount: 1,
@@ -481,7 +452,7 @@ export default function AdminPanel() {
     }
     setMentorForm({ 
       ...m, 
-      password: m.password || 'mentor123',
+      password: '',
       companyMode: isPreset ? 'preset' : m.company ? 'custom' : 'preset',
       dobMonth: mMonth,
       dobDate: mDate,
@@ -496,7 +467,11 @@ export default function AdminPanel() {
     if (e) e.preventDefault();
     if (!mentorForm.name.trim()) return;
 
-    const mentorPasswordVal = mentorForm.password?.trim() || 'mentor123';
+    const mentorPasswordVal = mentorForm.password?.trim() || '';
+    if (mentorPasswordVal && mentorPasswordVal.length < 8) {
+      window.alert('Mentor password must be at least 8 characters (or leave it blank to keep the current one).');
+      return;
+    }
 
     let formattedDob = mentorForm.dob || '';
     if (mentorForm.dobMonth && mentorForm.dobDate && mentorForm.dobYear) {
@@ -574,11 +549,11 @@ export default function AdminPanel() {
         }
       } catch (e) {}
 
-      try {
-        const localPassMap = JSON.parse(localStorage.getItem('careercore_mentor_passwords') || '{}');
-        localPassMap[mentorIdSaved] = mentorPasswordVal;
-        localStorage.setItem('careercore_mentor_passwords', JSON.stringify(localPassMap));
-      } catch (e) {}
+      // Login password lives only in Supabase Auth (temporary; mentor changes it at next login).
+      if (mentorPasswordVal && data?.id) {
+        const pwRes = await setMentorPassword(data.id, mentorPasswordVal);
+        if (!pwRes.success) window.alert('Mentor saved, but the password could not be set: ' + pwRes.message);
+      }
 
       const normalized = {
         ...(data || mentorForm),
@@ -587,7 +562,7 @@ export default function AdminPanel() {
         dobMonth: mentorForm.dobMonth,
         dobDate: mentorForm.dobDate,
         dobYear: mentorForm.dobYear,
-        password: mentorPasswordVal,
+        password: undefined,
         reviewsCount: (data?.reviews_count ?? mentorForm.reviewsCount) || 100,
         mentees: (data?.mentees_count ?? mentorForm.mentees) || 150
       };
@@ -637,9 +612,9 @@ export default function AdminPanel() {
 
       // 3. Delete from Supabase
       try {
-        const { error } = await supabase.from('mentors').delete().eq('id', mentorId);
-        if (error) {
-          console.warn('Supabase delete mentor notice:', error.message);
+        const res = await deleteMentorAccount(mentorId);
+        if (!res.success) {
+          console.warn('Delete mentor notice:', res.message);
         }
       } catch (err) {
         console.error('Failed to delete mentor in Supabase:', err);
@@ -1892,18 +1867,18 @@ export default function AdminPanel() {
                 <div className="sm:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-bold text-slate-700">
-                      Mentor Portal Password <span className="text-red-500">*</span>
+                      Temporary Login Password
                     </label>
-                    <span className="text-[10px] font-semibold text-slate-400">Used by mentor to log in at /mentor</span>
+                    <span className="text-[10px] font-semibold text-slate-400">Optional · min 8 chars · mentor must change it at first login</span>
                   </div>
                   <div className="relative">
                     <Key className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showFormPassword ? 'text' : 'password'}
-                      required
+                      autoComplete="new-password"
                       value={mentorForm.password || ''}
                       onChange={e => setMentorForm({ ...mentorForm, password: e.target.value })}
-                      placeholder="e.g. mentor123"
+                      placeholder="Leave blank to keep the current password"
                       className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-[#0F172A] bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none font-mono"
                     />
                     <button
@@ -2174,8 +2149,8 @@ export default function AdminPanel() {
                     <Key className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-extrabold text-[#0F172A]">Change Student Password</h3>
-                    <p className="text-[11px] text-slate-500 font-medium">Updates Supabase database credentials live</p>
+                    <h3 className="text-base font-extrabold text-[#0F172A]">Set Temporary Password</h3>
+                    <p className="text-[11px] text-slate-500 font-medium">They must choose a new password at next login</p>
                   </div>
                 </div>
                 <button
@@ -2190,7 +2165,7 @@ export default function AdminPanel() {
                 {passwordUpdateSuccess && (
                   <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Password updated successfully in Supabase!</span>
+                    <span>Temporary password set. Share it with them privately.</span>
                   </div>
                 )}
 
@@ -2203,11 +2178,8 @@ export default function AdminPanel() {
 
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
                   <div className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                    <span>Student: <strong className="text-[#0A317B]">{editingPasswordStudent.name}</strong></span>
+                    <span>{editingPasswordStudent.kind === 'mentor' ? 'Mentor' : 'Student'}: <strong className="text-[#0A317B]">{editingPasswordStudent.name}</strong></span>
                     <span className="font-mono text-slate-400 text-[11px]">@{editingPasswordStudent.username}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    Current Password: <span className="font-mono font-bold text-slate-800">{editingPasswordStudent.currentPass}</span>
                   </div>
                 </div>
 
@@ -2221,24 +2193,13 @@ export default function AdminPanel() {
                       type="text"
                       value={newStudentPasswordInput}
                       onChange={e => setNewStudentPasswordInput(e.target.value)}
-                      placeholder="Enter new password"
+                      placeholder="At least 8 characters"
+                      minLength={8}
+                      autoComplete="new-password"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#2563EB] focus:outline-none text-xs font-mono font-bold text-slate-800"
                       required
                       autoFocus
                     />
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
-                    {['student123', `${(editingPasswordStudent.username || 'user').toLowerCase()}123`, 'pass123'].map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setNewStudentPasswordInput(preset)}
-                        className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-mono font-bold transition-colors cursor-pointer"
-                      >
-                        {preset}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -4204,46 +4165,17 @@ export default function AdminPanel() {
                             </div>
                           </div>
 
-                          {/* Password Display with View Button (Circled in admin card) */}
+                          {/* Login: passwords are never shown; admins can only set a temporary one */}
                           <div className="flex flex-col items-end shrink-0 pt-0.5">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all">
-                              <div className="flex items-center gap-1 text-xs">
-                                <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Pass:</span>
-                                <span className="font-mono font-bold text-xs text-[#0A317B] min-w-[65px] text-center select-all">
-                                  {visiblePasswords[m.id] ? (m.password || 'mentor123') : '••••••••'}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1 ml-1">
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); togglePasswordVisibility(m.id); }}
-                                  className="p-1 rounded-lg hover:bg-white text-slate-500 hover:text-[#0A317B] transition-colors cursor-pointer"
-                                  title={visiblePasswords[m.id] ? "Hide Password" : "View Password"}
-                                >
-                                  {visiblePasswords[m.id] ? (
-                                    <EyeOff className="w-3.5 h-3.5 text-blue-600" />
-                                  ) : (
-                                    <Eye className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); handleCopyPassword(m.id, m.password || 'mentor123'); }}
-                                  className="p-1 rounded-lg hover:bg-white text-slate-500 hover:text-emerald-600 transition-colors cursor-pointer"
-                                  title="Copy Password"
-                                >
-                                  {copiedPasswordMentorId === m.id ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                  ) : (
-                                    <Copy className="w-3.5 h-3.5" />
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                            <span className="text-[9px] text-slate-400 font-semibold mt-1">
-                              {visiblePasswords[m.id] ? 'Click eye to hide' : 'Click eye to view'}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleOpenPasswordModal(m, 'mentor'); }}
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all text-[10px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
+                              title="Set a temporary login password"
+                            >
+                              <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                              <span>{m.auth_user_id ? 'Reset password' : 'Create login'}</span>
+                            </button>
                           </div>
                         </div>
 
@@ -4540,8 +4472,6 @@ export default function AdminPanel() {
                       ) : (
                         filteredUsers.map((user) => {
                           const progressInfo = getStudentProgressData(user);
-                          const userPassword = user.password || 'student123';
-                          const isPassVisible = Boolean(visibleStudentPasswords[user.id]);
 
                           return (
                             <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
@@ -4595,54 +4525,17 @@ export default function AdminPanel() {
                                 </span>
                               </td>
 
-                              {/* Student Password Column with Eye View & Copy (Exact same way as Mentor profile) */}
+                              {/* Login: passwords are never shown; admins can only set a temporary one */}
                               <td className="py-4 px-6">
-                                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all w-fit">
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Pass:</span>
-                                    <span className="font-mono font-bold text-xs text-[#0A317B] min-w-[65px] text-center select-all">
-                                      {isPassVisible ? userPassword : '••••••••'}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-0.5 border-l border-slate-200 pl-1 ml-1">
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); toggleStudentPasswordVisibility(user.id); }}
-                                      className="p-1 rounded-lg hover:bg-white text-slate-500 hover:text-[#0A317B] transition-colors cursor-pointer"
-                                      title={isPassVisible ? "Hide Password" : "View Password"}
-                                    >
-                                      {isPassVisible ? (
-                                        <EyeOff className="w-3.5 h-3.5 text-blue-600" />
-                                      ) : (
-                                        <Eye className="w-3.5 h-3.5" />
-                                      )}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); handleCopyStudentPassword(user.id, userPassword); }}
-                                      className="p-1 rounded-lg hover:bg-white text-slate-500 hover:text-emerald-600 transition-colors cursor-pointer"
-                                      title="Copy Password"
-                                    >
-                                      {copiedPasswordStudentId === user.id ? (
-                                        <Check className="w-3.5 h-3.5 text-emerald-600" />
-                                      ) : (
-                                        <Copy className="w-3.5 h-3.5" />
-                                      )}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={(e) => { e.stopPropagation(); handleOpenPasswordModal(user, userPassword); }}
-                                      className="p-1 rounded-lg hover:bg-white text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
-                                      title="Change / Reset Student Password"
-                                    >
-                                      <Edit3 className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-                                <span className="text-[9px] text-slate-400 font-semibold block mt-1">
-                                  {isPassVisible ? 'Click eye to hide' : 'Click eye to view'}
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleOpenPasswordModal(user, 'student'); }}
+                                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all w-fit text-[10px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
+                                  title="Set a temporary login password"
+                                >
+                                  <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                  <span>Reset password</span>
+                                </button>
                               </td>
 
                               {/* Course Progress Column */}

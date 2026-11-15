@@ -75,16 +75,12 @@ export default function TeacherPanel() {
         setLoadingMentors(false);
       }
     }
+    // Mentor rows are only readable once signed in, so reload when the user changes.
     fetchDbMentors();
-  }, []);
+  }, [currentUser?.id]);
 
-  const isAuthorizedMentor = (currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN') && (
-    currentUser?.role === 'ADMIN' || dbMentors.some(m => 
-      m.id === currentUser.id ||
-      (m.name && m.name.toLowerCase() === currentUser.name?.toLowerCase()) ||
-      (m.email && m.email.toLowerCase() === currentUser.email?.toLowerCase())
-    )
-  );
+  // currentUser.role comes from the database (get_my_role) after a real Supabase sign-in.
+  const isAuthorizedMentor = currentUser?.role === 'MENTOR' || currentUser?.role === 'ADMIN';
 
   const [mentorPassword, setMentorPassword] = useState('');
 
