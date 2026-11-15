@@ -27,15 +27,29 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const syntheticMentorEmail = (id: string) =>
-  `mentor-${String(id).replace(/[^a-z0-9]/gi, "").slice(0, 12).toLowerCase()}@mentors.careercore.invalid`;
+  "mentor-" + String(id).replace(/[^a-z0-9]/gi, "").slice(0, 12).toLowerCase() + "@mentors.careercore.invalid";
+
+// Works with both legacy keys (SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY) and the
+// newer publishable/secret keys (SUPABASE_PUBLISHABLE_KEYS / SUPABASE_SECRET_KEYS, JSON maps).
+function envKey(legacy: string, modern: string): string {
+  const direct = Deno.env.get(legacy);
+  if (direct) return direct;
+  try {
+    const map = JSON.parse(Deno.env.get(modern) ?? "{}");
+    return map.default ?? Object.values(map)[0] ?? "";
+  } catch {
+    return "";
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const anonKey = envKey("SUPABASE_ANON_KEY", "SUPABASE_PUBLISHABLE_KEYS");
+  const serviceKey = envKey("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEYS");
+  if (!url || !anonKey || !serviceKey) return json({ error: "Function is missing Supabase keys" }, 500);
 
   // 1. Who is calling? Check their role with their own token.
   const authHeader = req.headers.get("Authorization") ?? "";

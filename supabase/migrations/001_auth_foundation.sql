@@ -157,6 +157,10 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_auth_user();
 
+-- The previous trigger function let a sign-up choose its own role (e.g. 'ADMIN')
+-- from user metadata. It is no longer attached to anything; remove it.
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
 -- ---------------------------------------------------------------------------
 -- 5. Profile guard: a logged-in non-admin can edit their own progress and
 --    contact fields, but never their role, status, id or email.
