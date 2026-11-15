@@ -526,7 +526,7 @@ export default function CourseAdvisorBot() {
                     <div className="w-full max-w-[90%] p-4 rounded-2xl bg-gradient-to-br from-white to-teal-50/60 border border-teal-200 shadow-md space-y-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <span className="px-2 py-0.5 rounded-full bg-[#1A9C9B]/10 text-[#1A9C9B] font-extrabold text-[10px]">
+                          <span className="px-2 py-0.5 rounded-full bg-[#1A9C9B]/10 text-[#1A9C9B] font-extrabold text-[11px]">
                             {msg.courseRecommendation.category}
                           </span>
                           <h5 className="font-extrabold text-sm text-[#0A317B] mt-1">
@@ -544,7 +544,7 @@ export default function CourseAdvisorBot() {
 
                       <div className="flex flex-wrap gap-1">
                         {msg.courseRecommendation.skills.map((skill, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[10px] font-bold text-gray-700">
+                          <span key={idx} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-bold text-gray-700">
                             ✓ {skill}
                           </span>
                         ))}
@@ -584,7 +584,7 @@ export default function CourseAdvisorBot() {
                     </div>
                   )}
 
-                  <span className="text-[9px] text-gray-400 px-2 font-mono">
+                  <span className="text-[11px] text-gray-400 px-2 font-mono">
                     {msg.timestamp}
                   </span>
                 </div>

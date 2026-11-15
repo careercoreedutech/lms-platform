@@ -44,12 +44,12 @@ function CourseCard({ course, batchLabel, featured }) {
           <div className="absolute inset-0 bg-gradient-to-t from-[#050B1F]/85 via-[#050B1F]/20 to-transparent" />
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
             {course.category && (
-              <span className="px-2.5 py-1 rounded-full bg-white/95 text-[10px] font-extrabold uppercase tracking-wider text-brand-navy shadow-sm">
+              <span className="px-2.5 py-1 rounded-full bg-white/95 text-[11px] font-extrabold uppercase tracking-wider text-brand-navy shadow-sm">
                 {course.category}
               </span>
             )}
             {featured && (
-              <span className="px-2.5 py-1 rounded-full bg-brand-orange text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm flex items-center gap-1">
+              <span className="px-2.5 py-1 rounded-full bg-brand-orange text-[11px] font-extrabold uppercase tracking-wider text-white shadow-sm flex items-center gap-1">
                 <Sparkles className="w-3 h-3" /> Most enrolled
               </span>
             )}
@@ -62,13 +62,13 @@ function CourseCard({ course, batchLabel, featured }) {
 
         <div className="flex flex-col flex-1 p-5 sm:p-6">
           <h3 className="text-lg sm:text-xl font-black text-brand-navy leading-snug tracking-tight">
-            <a href={href} onClick={go} className="hover:text-brand-teal transition-colors">{course.title}</a>
+            <a href={href} onClick={go} className="inline-block py-1.5 -my-1.5 hover:text-brand-teal transition-colors">{course.title}</a>
           </h3>
           <p className="mt-2 text-[13px] leading-relaxed text-slate-600 line-clamp-2">{description}</p>
 
           {skills.length > 0 && (
             <div className="mt-4">
-              <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">You’ll master</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">You’ll master</p>
               <div className="flex flex-wrap gap-1.5">
                 {skills.map((s) => (
                   <span key={s} className="px-2 py-1 rounded-lg bg-slate-50 ring-1 ring-slate-200 text-[11px] font-bold text-slate-700">{s}</span>
@@ -90,7 +90,7 @@ function CourseCard({ course, batchLabel, featured }) {
             <button
               type="button"
               onClick={() => downloadSyllabus(course)}
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-brand-navy cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-500 hover:text-brand-navy cursor-pointer py-3 -my-3 px-2 -mx-2"
               aria-label={`Download ${course.title} syllabus`}
             >
               <Download className="w-3.5 h-3.5" /> Syllabus
@@ -172,7 +172,7 @@ export default function BusinessAnalystCard() {
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 text-sm text-slate-500">
           <span>Not sure which track fits you?</span>
-          <button onClick={() => openCounseling()} className="font-extrabold text-brand-navy hover:text-brand-teal underline underline-offset-4 decoration-brand-orange/60 cursor-pointer">
+          <button onClick={() => openCounseling()} className="font-extrabold text-brand-navy hover:text-brand-teal underline underline-offset-4 decoration-brand-orange/60 cursor-pointer py-3 -my-3">
             Get a free 1-on-1 recommendation →
           </button>
         </div>

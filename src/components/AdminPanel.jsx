@@ -1540,11 +1540,11 @@ export default function AdminPanel() {
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-gray-200/80 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-extrabold text-[#0A317B]">Dual-Tone Card Title (Optional)</span>
-                  <span className="text-[10px] text-gray-400 font-mono">Auto-splits if left blank</span>
+                  <span className="text-[11px] text-gray-400 font-mono">Auto-splits if left blank</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-[#22d3dd] block mb-0.5">Top Line (Cyan)</label>
+                    <label className="text-[11px] font-bold text-[#22d3dd] block mb-0.5">Top Line (Cyan)</label>
                     <input
                       type="text"
                       value={courseForm.title1 || ''}
@@ -1554,7 +1554,7 @@ export default function AdminPanel() {
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-[#f18f01] block mb-0.5">Bottom Line (Orange)</label>
+                    <label className="text-[11px] font-bold text-[#f18f01] block mb-0.5">Bottom Line (Orange)</label>
                     <input
                       type="text"
                       value={courseForm.title2 || ''}
@@ -1588,14 +1588,14 @@ export default function AdminPanel() {
 
                 {/* Quick Presets */}
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 block mb-1.5 uppercase tracking-wider">Quick Preset Covers:</span>
+                  <span className="text-[11px] font-bold text-gray-400 block mb-1.5 uppercase tracking-wider">Quick Preset Covers:</span>
                   <div className="flex flex-wrap gap-1.5">
                     {PRESET_IMAGES.map((preset, pIdx) => (
                       <button
                         key={pIdx}
                         type="button"
                         onClick={() => setCourseForm({ ...courseForm, image: preset.url })}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer border ${
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
                           courseForm.image === preset.url
                             ? 'bg-[#1A9C9B] text-white border-[#1A9C9B]'
                             : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-200'
@@ -1632,7 +1632,7 @@ export default function AdminPanel() {
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-600 block mb-1">Button Label</label>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Button Label</label>
                     <input
                       type="text"
                       value={courseForm.buttonText || 'Enroll'}
@@ -1643,7 +1643,7 @@ export default function AdminPanel() {
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-gray-600 block mb-1">Stick / Redirect to Course</label>
+                    <label className="text-[11px] font-bold text-gray-600 block mb-1">Stick / Redirect to Course</label>
                     <select
                       value={courseForm.redirectCourse || courseForm.title || ''}
                       onChange={e => setCourseForm({ ...courseForm, redirectCourse: e.target.value })}
@@ -1869,7 +1869,7 @@ export default function AdminPanel() {
                     <label className="text-xs font-bold text-slate-700">
                       Temporary Login Password
                     </label>
-                    <span className="text-[10px] font-semibold text-slate-400">Optional · min 8 chars · mentor must change it at first login</span>
+                    <span className="text-[11px] font-semibold text-slate-400">Optional · min 8 chars · mentor must change it at first login</span>
                   </div>
                   <div className="relative">
                     <Key className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -2077,7 +2077,7 @@ export default function AdminPanel() {
                   />
                 </div>
                 <div className="flex items-center gap-2 pt-1 overflow-x-auto pb-1">
-                  <span className="text-[10px] text-slate-400 font-semibold shrink-0">Presets:</span>
+                  <span className="text-[11px] text-slate-400 font-semibold shrink-0">Presets:</span>
                   {PRESET_MENTOR_AVATARS.map((imgUrl, i) => (
                     <button
                       key={i}
@@ -2259,7 +2259,7 @@ export default function AdminPanel() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-[#0A317B] text-[10px] font-extrabold uppercase tracking-wider">
+                    <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-[#0A317B] text-[11px] font-extrabold uppercase tracking-wider">
                       Student View Live Preview ({blocks.length} Blocks)
                     </span>
                     <span className="text-slate-400 text-xs font-mono">•</span>
@@ -2405,7 +2405,7 @@ export default function AdminPanel() {
                                     >
                                       <span>{opt}</span>
                                       {oIdx === q.correctIndex && (
-                                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">
+                                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded">
                                           Correct
                                         </span>
                                       )}
@@ -2561,21 +2561,21 @@ export default function AdminPanel() {
             </button>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${courseForm.title ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider ${courseForm.title ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
                   {courseForm.title ? 'Editing Existing Course' : 'New Course Builder'}
                 </span>
                 {courseForm.category && (
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold">
                     {courseForm.category}
                   </span>
                 )}
                 {courseForm.duration && (
-                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-bold">
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-bold">
                     {courseForm.duration}
                   </span>
                 )}
                 {courseForm.price && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200/60">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200/60">
                     {courseForm.price}
                   </span>
                 )}
@@ -2634,7 +2634,7 @@ export default function AdminPanel() {
                   <button
                     type="button"
                     onClick={addSectionFolder}
-                    className="px-2 py-1 rounded-lg bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-extrabold text-[10px] flex items-center gap-0.5 cursor-pointer transition-all shadow-2xs shrink-0"
+                    className="px-2 py-1 rounded-lg bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-extrabold text-[11px] flex items-center gap-0.5 cursor-pointer transition-all shadow-2xs shrink-0"
                     title="Add Week Section"
                   >
                     <Plus className="w-3 h-3" />
@@ -2652,7 +2652,7 @@ export default function AdminPanel() {
                         {/* Week Header Bar */}
                         <div className={`p-1.5 px-2 flex items-center justify-between gap-1 border-b border-gray-100 transition-colors ${hasActive ? 'bg-blue-50/80' : 'bg-slate-50/70'}`}>
                           <div className="flex items-center gap-1.5 flex-1 min-w-0 cursor-pointer" onClick={() => { setActiveSecIdx(secIdx); if (sec.items?.length > 0) setActiveItemIdx(0); }}>
-                            <span className="w-4 h-4 rounded-full bg-[#0A317B] text-white font-extrabold text-[9px] flex items-center justify-center shrink-0">
+                            <span className="w-4 h-4 rounded-full bg-[#0A317B] text-white font-extrabold text-[11px] flex items-center justify-center shrink-0">
                               {secIdx + 1}
                             </span>
                             <input
@@ -2663,7 +2663,7 @@ export default function AdminPanel() {
                                 updated[secIdx].title = e.target.value;
                                 setCourseForm({ ...courseForm, sections: updated });
                               }}
-                              className="w-full text-[10px] font-bold text-[#0A317B] bg-transparent focus:outline-none truncate"
+                              className="w-full text-[11px] font-bold text-[#0A317B] bg-transparent focus:outline-none truncate"
                             />
                           </div>
 
@@ -2707,7 +2707,7 @@ export default function AdminPanel() {
                                       : 'border-gray-200 hover:border-gray-300 bg-white text-gray-700'
                                   }`}
                                 >
-                                  <div className="flex items-center gap-1 text-[10px] font-bold truncate min-w-0">
+                                  <div className="flex items-center gap-1 text-[11px] font-bold truncate min-w-0">
                                     {item.contentType === 'video' && <Video className="w-3 h-3 text-blue-500 shrink-0" />}
                                     {item.contentType === 'notion' && <FileText className="w-3 h-3 text-teal-600 shrink-0" />}
                                     {item.contentType === 'quiz' && <HelpCircle className="w-3 h-3 text-amber-500 shrink-0" />}
@@ -2715,7 +2715,7 @@ export default function AdminPanel() {
                                     <span className="truncate">{item.title}</span>
                                   </div>
 
-                                  <span className="text-[8px] text-gray-400 font-mono capitalize shrink-0">{item.contentType}</span>
+                                  <span className="text-[11px] text-gray-400 font-mono capitalize shrink-0">{item.contentType}</span>
                                 </div>
                               );
                             })}
@@ -2723,7 +2723,7 @@ export default function AdminPanel() {
                             <button
                               type="button"
                               onClick={() => setAddTopicModalSecIdx(secIdx)}
-                              className="w-full py-1 px-1.5 rounded-lg border border-dashed border-gray-300 hover:border-teal-400 hover:bg-teal-50/40 text-gray-600 font-bold text-[9px] flex items-center justify-center gap-0.5 transition-all cursor-pointer mt-0.5"
+                              className="w-full py-1 px-1.5 rounded-lg border border-dashed border-gray-300 hover:border-teal-400 hover:bg-teal-50/40 text-gray-600 font-bold text-[11px] flex items-center justify-center gap-0.5 transition-all cursor-pointer mt-0.5"
                             >
                               <Plus className="w-3 h-3 text-[#1A9C9B]" />
                               <span>+ Add Topic</span>
@@ -2915,7 +2915,7 @@ export default function AdminPanel() {
                                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                                       Live Video Stream (Ready)
                                     </span>
-                                    <span className="font-mono text-[10px] text-slate-400">
+                                    <span className="font-mono text-[11px] text-slate-400">
                                       {block.videoFileName || (blockIdx === 0 ? currentActiveItem?.videoFileName : '') || 'video.mp4'}
                                     </span>
                                   </div>
@@ -2937,7 +2937,7 @@ export default function AdminPanel() {
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-xs font-bold text-teal-700">
                               <span className="flex items-center gap-1.5"><FileCode className="w-4 h-4" /> Notion-Style Document Editor</span>
-                              <span className="text-[10px] text-gray-400 font-mono">Markdown Supported</span>
+                              <span className="text-[11px] text-gray-400 font-mono">Markdown Supported</span>
                             </div>
                             <textarea
                               rows={8}
@@ -3079,7 +3079,7 @@ export default function AdminPanel() {
                         <Plus className="w-6 h-6 transition-transform group-hover:rotate-90" />
                       </button>
                       <span className="text-xs font-extrabold text-[#0A317B]">Add Content Block to this Page</span>
-                      <p className="text-[10px] text-gray-400">Click + to select Video, Article, Quiz, or Resource to add here</p>
+                      <p className="text-[11px] text-gray-400">Click + to select Video, Article, Quiz, or Resource to add here</p>
                     </div>
                   </div>
                 )}
@@ -3131,7 +3131,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Video Lesson</p>
-                      <p className="text-[10px] text-gray-500">Drag & drop native video</p>
+                      <p className="text-[11px] text-gray-500">Drag & drop native video</p>
                     </div>
                   </button>
 
@@ -3145,7 +3145,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Article / Notion</p>
-                      <p className="text-[10px] text-gray-500">Document & notes editor</p>
+                      <p className="text-[11px] text-gray-500">Document & notes editor</p>
                     </div>
                   </button>
 
@@ -3159,7 +3159,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">MCQ Quiz</p>
-                      <p className="text-[10px] text-gray-500">Interactive questions</p>
+                      <p className="text-[11px] text-gray-500">Interactive questions</p>
                     </div>
                   </button>
 
@@ -3173,7 +3173,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">File Resource</p>
-                      <p className="text-[10px] text-gray-500">PDF, ZIP, or DOCX file</p>
+                      <p className="text-[11px] text-gray-500">PDF, ZIP, or DOCX file</p>
                     </div>
                   </button>
                 </div>
@@ -3225,7 +3225,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Video Lesson</p>
-                      <p className="text-[10px] text-gray-500">Drag & drop native video</p>
+                      <p className="text-[11px] text-gray-500">Drag & drop native video</p>
                     </div>
                   </button>
 
@@ -3239,7 +3239,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Article / Notion</p>
-                      <p className="text-[10px] text-gray-500">Document & notes editor</p>
+                      <p className="text-[11px] text-gray-500">Document & notes editor</p>
                     </div>
                   </button>
 
@@ -3253,7 +3253,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">MCQ Quiz</p>
-                      <p className="text-[10px] text-gray-500">Interactive questions</p>
+                      <p className="text-[11px] text-gray-500">Interactive questions</p>
                     </div>
                   </button>
 
@@ -3267,7 +3267,7 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">File Resource</p>
-                      <p className="text-[10px] text-gray-500">PDF, ZIP, or DOCX file</p>
+                      <p className="text-[11px] text-gray-500">PDF, ZIP, or DOCX file</p>
                     </div>
                   </button>
                 </div>
@@ -3331,14 +3331,14 @@ export default function AdminPanel() {
                     <span>{item.label}</span>
                   </div>
                   {item.badge !== undefined && item.badge > 0 && (
-                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[11px] font-extrabold ${
                       isActive ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {item.badge}
                     </span>
                   )}
                   {item.badge === undefined && item.count !== undefined && (
-                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    <span className={`ml-2 px-1.5 md:px-2 py-0.5 rounded-full text-[11px] font-bold ${
                       isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {item.count}
@@ -3415,7 +3415,7 @@ export default function AdminPanel() {
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-50">
                   <div className="px-4 py-2 border-b border-slate-100">
                     <p className="text-xs font-bold text-[#0F172A]">Administrator</p>
-                    <p className="text-[10px] text-slate-400 font-mono">admin@careercore.com</p>
+                    <p className="text-[11px] text-slate-400 font-mono">admin@careercore.com</p>
                   </div>
 
                   <button
@@ -3487,7 +3487,7 @@ export default function AdminPanel() {
                   </div>
                   <div>
                     <div className="text-xs font-extrabold text-[#2563EB]">Quick Add Course Card</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Create a new course in seconds</div>
+                    <div className="text-[11px] text-slate-400 font-medium">Create a new course in seconds</div>
                   </div>
                 </button>
 
@@ -3500,7 +3500,7 @@ export default function AdminPanel() {
                   </div>
                   <div>
                     <div className="text-xs font-extrabold text-white">Create Course Structure</div>
-                    <div className="text-[10px] text-blue-200 font-medium">Build full course with hierarchy</div>
+                    <div className="text-[11px] text-blue-200 font-medium">Build full course with hierarchy</div>
                   </div>
                 </button>
               </div>
@@ -3634,17 +3634,17 @@ export default function AdminPanel() {
                 {/* Timeline Metrics Row */}
                 <div className="grid grid-cols-3 gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Timeline Enrolled</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Timeline Enrolled</span>
                     <span className="text-xl font-black text-[#0F172A]">{timelineFilteredStudents.length}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Approved</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Approved</span>
                     <span className="text-xl font-black text-emerald-600">
                       {timelineFilteredStudents.filter(s => s.status === 'APPROVED').length}
                     </span>
                   </div>
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">In Review</span>
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">In Review</span>
                     <span className="text-xl font-black text-amber-500">
                       {timelineFilteredStudents.filter(s => s.status === 'PENDING').length}
                     </span>
@@ -3678,9 +3678,9 @@ export default function AdminPanel() {
                           <div className="flex items-center gap-3 shrink-0">
                             <div className="text-right hidden sm:block">
                               <span className="text-xs font-extrabold text-[#0F172A]">{pct}% finished</span>
-                              <span className="text-[10px] text-slate-400 block">{completed}/{totalLessons} lessons</span>
+                              <span className="text-[11px] text-slate-400 block">{completed}/{totalLessons} lessons</span>
                             </div>
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${
                               student.status === 'APPROVED' ? 'bg-teal-50 text-[#1A9C9B] border-teal-200' :
                               student.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-200' :
                               'bg-amber-50 text-amber-600 border-amber-200'
@@ -3707,7 +3707,7 @@ export default function AdminPanel() {
                         Course Completion Metrics
                       </h4>
                     </div>
-                    <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-[#1A9C9B] text-[10px] font-extrabold border border-teal-200">
+                    <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-[#1A9C9B] text-[11px] font-extrabold border border-teal-200">
                       Real-time
                     </span>
                   </div>
@@ -3719,21 +3719,21 @@ export default function AdminPanel() {
                 {/* 3 Completion Status Boxes */}
                 <div className="grid grid-cols-3 gap-2.5">
                   <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-center">
-                    <span className="text-[10px] font-extrabold text-emerald-800 uppercase block">Completed</span>
+                    <span className="text-[11px] font-extrabold text-emerald-800 uppercase block">Completed</span>
                     <span className="text-2xl font-black text-emerald-600">{completedStudentsList.length}</span>
-                    <span className="text-[10px] text-emerald-700 font-semibold block mt-0.5">100% finished</span>
+                    <span className="text-[11px] text-emerald-700 font-semibold block mt-0.5">100% finished</span>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-blue-50 border border-blue-100 text-center">
-                    <span className="text-[10px] font-extrabold text-[#2563EB] uppercase block">In Progress</span>
+                    <span className="text-[11px] font-extrabold text-[#2563EB] uppercase block">In Progress</span>
                     <span className="text-2xl font-black text-[#2563EB]">{inProgressStudentsList.length}</span>
-                    <span className="text-[10px] text-blue-700 font-semibold block mt-0.5">Active studying</span>
+                    <span className="text-[11px] text-blue-700 font-semibold block mt-0.5">Active studying</span>
                   </div>
 
                   <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 text-center">
-                    <span className="text-[10px] font-extrabold text-slate-600 uppercase block">Not Started</span>
+                    <span className="text-[11px] font-extrabold text-slate-600 uppercase block">Not Started</span>
                     <span className="text-2xl font-black text-slate-700">{notStartedStudentsList.length}</span>
-                    <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">0% progress</span>
+                    <span className="text-[11px] text-slate-500 font-semibold block mt-0.5">0% progress</span>
                   </div>
                 </div>
 
@@ -3883,7 +3883,7 @@ export default function AdminPanel() {
                               
                               {/* Category Badge */}
                               <div className="absolute top-3 left-3">
-                                <span className={`px-2.5 py-1 rounded-full text-white text-[10px] font-extrabold uppercase shadow-sm flex items-center gap-1 ${
+                                <span className={`px-2.5 py-1 rounded-full text-white text-[11px] font-extrabold uppercase shadow-sm flex items-center gap-1 ${
                                   c.category?.toLowerCase().includes('ai') ? 'bg-[#7C3AED]' :
                                   c.category?.toLowerCase().includes('cloud') ? 'bg-[#0284C7]' :
                                   c.category?.toLowerCase().includes('product') ? 'bg-[#EA580C]' :
@@ -3907,11 +3907,11 @@ export default function AdminPanel() {
                               <div className="absolute bottom-3 left-3.5 right-3.5 text-white">
                                 <h4 className="text-base font-extrabold drop-shadow-sm line-clamp-1">{c.title}</h4>
                                 <div className="flex items-center gap-1.5 mt-1">
-                                  <span className="px-2 py-0.5 rounded-md bg-[#1E3A8A]/90 text-white font-bold text-[10px] backdrop-blur-xs">
+                                  <span className="px-2 py-0.5 rounded-md bg-[#1E3A8A]/90 text-white font-bold text-[11px] backdrop-blur-xs">
                                     {titleParts.t1}
                                   </span>
                                   {titleParts.t2 && (
-                                    <span className="px-2 py-0.5 rounded-md bg-[#312E81]/90 text-white font-bold text-[10px] backdrop-blur-xs">
+                                    <span className="px-2 py-0.5 rounded-md bg-[#312E81]/90 text-white font-bold text-[11px] backdrop-blur-xs">
                                       {titleParts.t2}
                                     </span>
                                   )}
@@ -4137,7 +4137,7 @@ export default function AdminPanel() {
                           </div>
 
                           <div className="flex items-center gap-1.5">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold border ${
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${
                               m.status === 'Active'
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : 'bg-amber-50 text-amber-700 border-amber-200'
@@ -4170,7 +4170,7 @@ export default function AdminPanel() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleOpenPasswordModal(m, 'mentor'); }}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all text-[10px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
+                              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all text-[11px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
                               title="Set a temporary login password"
                             >
                               <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -4182,7 +4182,7 @@ export default function AdminPanel() {
                         {/* Assigned Course Tag & DOB */}
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                               Domain Track
                             </p>
                             <span className="inline-block px-2.5 py-1 rounded-lg bg-blue-50/80 text-[#2563EB] font-bold text-[11px] border border-blue-100">
@@ -4191,7 +4191,7 @@ export default function AdminPanel() {
                           </div>
                           {m.dob && (
                             <div>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                 Date of Birth
                               </p>
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold text-[11px] border border-blue-200/80">
@@ -4205,18 +4205,18 @@ export default function AdminPanel() {
                         {/* Stats Row: Rating + Mentees + Exp */}
                         <div className="grid grid-cols-3 gap-2 py-2.5 px-3 rounded-2xl bg-slate-50/80 border border-slate-100 text-center">
                           <div>
-                            <p className="text-[10px] text-slate-400 font-semibold">Rating</p>
+                            <p className="text-[11px] text-slate-400 font-semibold">Rating</p>
                             <p className="text-xs font-black text-amber-600 flex items-center justify-center gap-0.5 mt-0.5">
                               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
                               <span>{m.rating}</span>
                             </p>
                           </div>
                           <div className="border-x border-slate-200/80">
-                            <p className="text-[10px] text-slate-400 font-semibold">Mentees</p>
+                            <p className="text-[11px] text-slate-400 font-semibold">Mentees</p>
                             <p className="text-xs font-black text-[#0F172A] mt-0.5">{m.mentees}+</p>
                           </div>
                           <div>
-                            <p className="text-[10px] text-slate-400 font-semibold">Exp</p>
+                            <p className="text-[11px] text-slate-400 font-semibold">Exp</p>
                             <p className="text-xs font-black text-slate-700 mt-0.5">{m.experience}</p>
                           </div>
                         </div>
@@ -4318,13 +4318,13 @@ export default function AdminPanel() {
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
 
                           <div className="absolute top-3 left-3 flex gap-2">
-                            <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-extrabold uppercase tracking-wider">
+                            <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-extrabold uppercase tracking-wider">
                               {course.category || 'Career Track'}
                             </span>
                           </div>
 
                           <div className="absolute bottom-3 left-3 right-3 text-white">
-                            <span className="text-[10px] font-bold text-blue-200">
+                            <span className="text-[11px] font-bold text-blue-200">
                               {course.duration || '6 Weeks'} Intensive
                             </span>
                             <h4 className="text-base font-extrabold leading-snug drop-shadow-sm">
@@ -4341,11 +4341,11 @@ export default function AdminPanel() {
 
                           <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-100 text-center">
                             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                              <p className="text-[10px] text-slate-400 font-semibold">Curriculum</p>
+                              <p className="text-[11px] text-slate-400 font-semibold">Curriculum</p>
                               <p className="text-xs font-black text-[#0F172A] mt-0.5">{totalModules} Modules ({totalItems} items)</p>
                             </div>
                             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                              <p className="text-[10px] text-slate-400 font-semibold">Tuition</p>
+                              <p className="text-[11px] text-slate-400 font-semibold">Tuition</p>
                               <p className="text-xs font-black text-emerald-600 mt-0.5">{course.price || '₹30,000'}</p>
                             </div>
                           </div>
@@ -4496,14 +4496,14 @@ export default function AdminPanel() {
                                           href={`https://wa.me/${waNumber}`} 
                                           target="_blank" 
                                           rel="noreferrer"
-                                          className="text-[10px] text-emerald-600 hover:text-emerald-800 font-bold hover:underline"
+                                          className="text-[11px] text-emerald-600 hover:text-emerald-800 font-bold hover:underline"
                                         >
                                           WhatsApp
                                         </a>
                                         <span className="text-slate-300">•</span>
                                         <a 
                                           href={`tel:${callNumber}`}
-                                          className="text-[10px] text-slate-500 hover:text-slate-800 font-bold hover:underline"
+                                          className="text-[11px] text-slate-500 hover:text-slate-800 font-bold hover:underline"
                                         >
                                           Call
                                         </a>
@@ -4530,7 +4530,7 @@ export default function AdminPanel() {
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); handleOpenPasswordModal(user, 'student'); }}
-                                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all w-fit text-[10px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
+                                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100/90 border border-slate-200/90 rounded-2xl shadow-2xs transition-all w-fit text-[11px] font-extrabold text-slate-600 uppercase tracking-wider cursor-pointer"
                                   title="Set a temporary login password"
                                 >
                                   <Key className="w-3.5 h-3.5 text-amber-500 shrink-0" />
@@ -4545,7 +4545,7 @@ export default function AdminPanel() {
                                     <span className={progressInfo.pct >= 100 ? 'text-emerald-600 font-extrabold' : 'text-slate-700'}>
                                       {progressInfo.pct}%
                                     </span>
-                                    <span className="text-slate-400 text-[10px] font-mono">
+                                    <span className="text-slate-400 text-[11px] font-mono">
                                       {progressInfo.completed}/{progressInfo.totalLessons} lessons
                                     </span>
                                   </div>
@@ -4566,19 +4566,19 @@ export default function AdminPanel() {
 
                               <td className="py-4 px-6">
                                 {user.status === 'PENDING' && (
-                                  <span className="px-3 py-1 rounded-full bg-amber-50 text-[#FA9C16] font-extrabold text-[10px] border border-amber-200 flex items-center gap-1 w-fit">
+                                  <span className="px-3 py-1 rounded-full bg-amber-50 text-[#FA9C16] font-extrabold text-[11px] border border-amber-200 flex items-center gap-1 w-fit">
                                     <Clock className="w-3 h-3 animate-pulse" /> PENDING APPROVAL
                                   </span>
                                 )}
 
                                 {user.status === 'APPROVED' && (
-                                  <span className="px-3 py-1 rounded-full bg-teal-50 text-[#1A9C9B] font-extrabold text-[10px] border border-teal-200 flex items-center gap-1 w-fit">
+                                  <span className="px-3 py-1 rounded-full bg-teal-50 text-[#1A9C9B] font-extrabold text-[11px] border border-teal-200 flex items-center gap-1 w-fit">
                                     <CheckCircle2 className="w-3 h-3" /> APPROVED & ACTIVE
                                   </span>
                                 )}
 
                                 {user.status === 'REJECTED' && (
-                                  <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 font-extrabold text-[10px] border border-red-200 flex items-center gap-1 w-fit">
+                                  <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 font-extrabold text-[11px] border border-red-200 flex items-center gap-1 w-fit">
                                     <XCircle className="w-3 h-3" /> ACCESS REJECTED
                                   </span>
                                 )}
@@ -4649,22 +4649,22 @@ export default function AdminPanel() {
                   <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100">
                     <p className="text-xs font-semibold text-slate-500">Total Enrolled Learners</p>
                     <p className="text-2xl font-black text-[#2563EB] mt-1">{users.filter(u => u.status === 'APPROVED').length}</p>
-                    <p className="text-[10px] text-slate-500 font-semibold mt-1">Verified active students</p>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-1">Verified active students</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-100">
                     <p className="text-xs font-semibold text-slate-500">Pending Applications</p>
                     <p className="text-2xl font-black text-amber-600 mt-1">{pendingCount}</p>
-                    <p className="text-[10px] text-amber-600 font-semibold mt-1">Awaiting admin review</p>
+                    <p className="text-[11px] text-amber-600 font-semibold mt-1">Awaiting admin review</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-teal-50/60 border border-teal-100">
                     <p className="text-xs font-semibold text-slate-500">Published Courses</p>
                     <p className="text-2xl font-black text-[#0D9488] mt-1">{courses.length}</p>
-                    <p className="text-[10px] text-emerald-600 font-semibold mt-1">Active curriculum tracks</p>
+                    <p className="text-[11px] text-emerald-600 font-semibold mt-1">Active curriculum tracks</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-purple-50/60 border border-purple-100">
                     <p className="text-xs font-semibold text-slate-500">Industry Mentors</p>
                     <p className="text-2xl font-black text-purple-600 mt-1">{mentors.length}</p>
-                    <p className="text-[10px] text-purple-600 font-semibold mt-1">Active mentor faculty</p>
+                    <p className="text-[11px] text-purple-600 font-semibold mt-1">Active mentor faculty</p>
                   </div>
                 </div>
 

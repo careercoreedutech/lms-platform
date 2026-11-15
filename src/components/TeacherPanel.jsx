@@ -1058,7 +1058,7 @@ export default function TeacherPanel() {
                               </div>
 
                               <div className="flex items-center gap-1 shrink-0">
-                                <span className="text-[10px] text-gray-400 font-mono">
+                                <span className="text-[11px] text-gray-400 font-mono">
                                   {item.contentType}
                                 </span>
                                 {sec.items.length > 1 && (
@@ -1232,7 +1232,7 @@ export default function TeacherPanel() {
                                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                                   Live Video Stream (Ready)
                                 </span>
-                                <span className="font-mono text-[10px] text-slate-400">
+                                <span className="font-mono text-[11px] text-slate-400">
                                   {block.videoFileName || currentActiveItem?.videoFileName || 'video.mp4'}
                                 </span>
                               </div>
@@ -1248,7 +1248,7 @@ export default function TeacherPanel() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs font-bold text-teal-700">
                           <span className="flex items-center gap-1.5"><FileCode className="w-4 h-4" /> Notion-Style Document Editor</span>
-                          <span className="text-[10px] text-gray-400 font-mono">Markdown Supported</span>
+                          <span className="text-[11px] text-gray-400 font-mono">Markdown Supported</span>
                         </div>
                         <textarea
                           rows={8}
@@ -1390,7 +1390,7 @@ export default function TeacherPanel() {
                     <Plus className="w-6 h-6 transition-transform group-hover:rotate-90" />
                   </button>
                   <span className="text-xs font-extrabold text-[#0A317B]">Add Content Block to this Page</span>
-                  <p className="text-[10px] text-gray-400">Click + to select Video, Article, Quiz, or Resource to add here</p>
+                  <p className="text-[11px] text-gray-400">Click + to select Video, Article, Quiz, or Resource to add here</p>
                 </div>
               </div>
             )}
@@ -1428,7 +1428,7 @@ export default function TeacherPanel() {
                     <Video className="w-5 h-5 text-blue-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Video Lesson</p>
-                      <p className="text-[10px] text-gray-500">Drag & drop native video</p>
+                      <p className="text-[11px] text-gray-500">Drag & drop native video</p>
                     </div>
                   </button>
 
@@ -1436,7 +1436,7 @@ export default function TeacherPanel() {
                     <FileText className="w-5 h-5 text-teal-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Article / Notion</p>
-                      <p className="text-[10px] text-gray-500">Document & notes editor</p>
+                      <p className="text-[11px] text-gray-500">Document & notes editor</p>
                     </div>
                   </button>
 
@@ -1444,7 +1444,7 @@ export default function TeacherPanel() {
                     <HelpCircle className="w-5 h-5 text-amber-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">MCQ Quiz</p>
-                      <p className="text-[10px] text-gray-500">Interactive questions</p>
+                      <p className="text-[11px] text-gray-500">Interactive questions</p>
                     </div>
                   </button>
 
@@ -1452,7 +1452,7 @@ export default function TeacherPanel() {
                     <File className="w-5 h-5 text-rose-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">File Resource</p>
-                      <p className="text-[10px] text-gray-500">PDF, ZIP, or DOCX file</p>
+                      <p className="text-[11px] text-gray-500">PDF, ZIP, or DOCX file</p>
                     </div>
                   </button>
                 </div>
@@ -1488,7 +1488,7 @@ export default function TeacherPanel() {
                     <Video className="w-5 h-5 text-blue-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Video Lesson</p>
-                      <p className="text-[10px] text-gray-500">Drag & drop native video</p>
+                      <p className="text-[11px] text-gray-500">Drag & drop native video</p>
                     </div>
                   </button>
 
@@ -1496,7 +1496,7 @@ export default function TeacherPanel() {
                     <FileText className="w-5 h-5 text-teal-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">Article / Notion</p>
-                      <p className="text-[10px] text-gray-500">Document & notes editor</p>
+                      <p className="text-[11px] text-gray-500">Document & notes editor</p>
                     </div>
                   </button>
 
@@ -1504,7 +1504,7 @@ export default function TeacherPanel() {
                     <HelpCircle className="w-5 h-5 text-amber-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">MCQ Quiz</p>
-                      <p className="text-[10px] text-gray-500">Interactive questions</p>
+                      <p className="text-[11px] text-gray-500">Interactive questions</p>
                     </div>
                   </button>
 
@@ -1512,7 +1512,7 @@ export default function TeacherPanel() {
                     <File className="w-5 h-5 text-rose-600" />
                     <div>
                       <p className="font-extrabold text-xs text-[#0A317B]">File Resource</p>
-                      <p className="text-[10px] text-gray-500">PDF, ZIP, or DOCX file</p>
+                      <p className="text-[11px] text-gray-500">PDF, ZIP, or DOCX file</p>
                     </div>
                   </button>
                 </div>
@@ -1676,7 +1676,7 @@ export default function TeacherPanel() {
                   </p>
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
                   <span className="font-semibold text-slate-500">{currentUser?.role || 'MENTOR'}</span>
                   {(currentUser?.company || activeMentorData?.company) ? ` · ${currentUser?.company || activeMentorData?.company}` : ''}
                 </p>
@@ -1948,7 +1948,7 @@ export default function TeacherPanel() {
                     <div className="space-y-4">
                       {/* Top Row: Category badge + Duration */}
                       <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-1 rounded-full ${meta.categoryBadgeClass} font-extrabold text-[10px] uppercase tracking-wider`}>
+                        <span className={`px-2.5 py-1 rounded-full ${meta.categoryBadgeClass} font-extrabold text-[11px] uppercase tracking-wider`}>
                           {meta.categoryLabel}
                         </span>
                         <span className="text-xs font-semibold text-slate-400">
@@ -2105,7 +2105,7 @@ export default function TeacherPanel() {
                         </td>
                         <td className="px-6 py-4 text-slate-500">{user.registeredAt || '2026-09-15'}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full font-extrabold text-[10px] ${
+                          <span className={`px-2.5 py-1 rounded-full font-extrabold text-[11px] ${
                             user.status === 'APPROVED' 
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                               : 'bg-amber-50 text-amber-700 border border-amber-200'

@@ -53,7 +53,7 @@ export default function CtaBanner() {
                   [left.seconds, 's'],
                 ].map(([v, u]) => (
                   <span key={u} className="min-w-[3rem] px-2 py-1.5 rounded-lg bg-white/10 ring-1 ring-white/15 text-sm font-extrabold tabular-nums">
-                    {pad(v)}<span className="text-white/50 text-[10px] ml-0.5">{u}</span>
+                    {pad(v)}<span className="text-white/50 text-[11px] ml-0.5">{u}</span>
                   </span>
                 ))}
               </div>

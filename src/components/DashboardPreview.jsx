@@ -55,7 +55,7 @@ export default function DashboardPreview() {
             onClick={() => setCurveHeight(curveHeight === 14 ? 26 : 14)}
           >
             <div className="w-full h-full rounded-2xl border border-white/30 p-2 relative overflow-hidden flex items-center justify-center">
-              <div className="absolute top-1.5 left-2.5 text-[10px] font-mono font-bold text-white/95">Learning growth curve</div>
+              <div className="absolute top-1.5 left-2.5 text-[11px] font-mono font-bold text-white/95">Learning growth curve</div>
               <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] bg-[size:16px_16px]" />
               <svg className="w-full h-full relative z-10 overflow-visible" viewBox="0 0 100 60">
                 <path d={`M 10 48 Q 50 42 90 ${curveHeight}`} fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" />
@@ -74,14 +74,14 @@ export default function DashboardPreview() {
           >
             <div className="flex items-center justify-between">
               <span className="text-xs font-extrabold tracking-wide">Skill verification</span>
-              <span className="text-[9px] font-mono bg-brand-teal px-1.5 py-0.5 rounded font-bold">
+              <span className="text-[11px] font-mono bg-brand-teal px-1.5 py-0.5 rounded font-bold">
                 {assessmentChecked ? 'Verified ✓' : 'Pending'}
               </span>
             </div>
             <button
               type="button"
               onClick={() => setAssessmentChecked(!assessmentChecked)}
-              className="w-full flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer"
+              className="w-full flex items-center gap-2 bg-white/15 hover:bg-white/25 transition-colors px-2.5 py-2.5 rounded-xl text-xs font-bold cursor-pointer"
             >
               <span className={`w-4 h-4 rounded flex items-center justify-center border border-white ${assessmentChecked ? 'bg-white text-brand-navy' : ''}`}>
                 {assessmentChecked && <Check className="w-3 h-3 stroke-[3]" />}
@@ -96,11 +96,11 @@ export default function DashboardPreview() {
             transition={{ repeat: Infinity, duration: 4.8, ease: 'easeInOut', delay: 1.5 }}
             className="hidden md:flex absolute bottom-16 left-2 lg:left-6 xl:left-0 z-30 bg-brand-teal text-white px-3 py-2.5 rounded-2xl shadow-3d-teal ring-2 ring-white/60 items-center justify-between gap-2 font-extrabold w-60"
           >
-            <button type="button" aria-label="Previous track" onClick={() => setCourseIndex((courseIndex - 1 + courses.length) % courses.length)} className="p-1 hover:bg-white/20 rounded-lg cursor-pointer">
+            <button type="button" aria-label="Previous track" onClick={() => setCourseIndex((courseIndex - 1 + courses.length) % courses.length)} className="p-2.5 -m-1.5 hover:bg-white/20 rounded-lg cursor-pointer">
               <ChevronLeft className="w-4 h-4 stroke-[3]" />
             </button>
             <span className="text-xs tracking-wide text-center">{currentCourse.name}</span>
-            <button type="button" aria-label="Next track" onClick={() => setCourseIndex((courseIndex + 1) % courses.length)} className="p-1 hover:bg-white/20 rounded-lg cursor-pointer">
+            <button type="button" aria-label="Next track" onClick={() => setCourseIndex((courseIndex + 1) % courses.length)} className="p-2.5 -m-1.5 hover:bg-white/20 rounded-lg cursor-pointer">
               <ChevronRight className="w-4 h-4 stroke-[3]" />
             </button>
           </motion.div>
@@ -118,7 +118,7 @@ export default function DashboardPreview() {
                   type="button"
                   key={fmt}
                   onClick={() => setSelectedFormat(fmt)}
-                  className={`py-1.5 px-2 rounded-xl border border-white/20 transition-all cursor-pointer ${
+                  className={`py-2.5 px-2 rounded-xl border border-white/20 transition-all cursor-pointer ${
                     selectedFormat === fmt ? 'bg-brand-navy text-white shadow-md' : 'bg-white/20 hover:bg-white/30'
                   }`}
                 >
@@ -169,7 +169,7 @@ export default function DashboardPreview() {
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                     Student Skill Progress
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0A317B]">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-[#0A317B]">
                     {currentCourse.name}
                   </span>
                 </div>
@@ -218,7 +218,7 @@ export default function DashboardPreview() {
                   />
                 </div>
 
-                <div className="flex gap-2 text-[10px] text-gray-500 flex-wrap pt-1 font-sans">
+                <div className="flex gap-2 text-[11px] text-gray-500 flex-wrap pt-1 font-sans">
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded" style={{ backgroundColor: currentCourse.primary }} /> Web Dev</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#1A9C9B]" /> AI & Data</span>
                   <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-[#FA9C16]" /> DevOps</span>
@@ -250,11 +250,11 @@ export default function DashboardPreview() {
                   </svg>
                   <div className="absolute flex flex-col items-center">
                     <span className="text-sm font-extrabold text-[#0A317B]">{skillCount * 4 + 4}</span>
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">Lessons</span>
+                    <span className="text-[11px] text-gray-500 uppercase font-bold">Lessons</span>
                   </div>
                 </div>
 
-                <div className="text-[10px] text-gray-500 w-full space-y-0.5 font-sans">
+                <div className="text-[11px] text-gray-500 w-full space-y-0.5 font-sans">
                   <div className="flex justify-between"><span>Completed</span><span className="font-bold">{skillCount * 3}</span></div>
                   <div className="flex justify-between"><span>In Progress</span><span className="font-bold">{skillCount}</span></div>
                   <div className="flex justify-between"><span>Upcoming</span><span className="font-bold">4</span></div>
@@ -270,19 +270,19 @@ export default function DashboardPreview() {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                     <span className="font-semibold text-gray-700">Course Track</span>
-                    <span className="text-[10px] font-bold text-[#0A317B]">{currentCourse.name}</span>
+                    <span className="text-[11px] font-bold text-[#0A317B]">{currentCourse.name}</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                     <span className="font-semibold text-gray-700">Learning Format</span>
-                    <span className="text-[10px] font-bold text-[#1A9C9B]">{selectedFormat}</span>
+                    <span className="text-[11px] font-bold text-[#1A9C9B]">{selectedFormat}</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                     <span className="font-semibold text-gray-700">Certification</span>
-                    <span className="text-[10px] font-bold text-[#FA9C16]">{selectedCertMode}</span>
+                    <span className="text-[11px] font-bold text-[#FA9C16]">{selectedCertMode}</span>
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                     <span className="font-semibold text-gray-700">Job Guarantee</span>
-                    <span className="text-[10px] font-bold text-emerald-600">Active ✓</span>
+                    <span className="text-[11px] font-bold text-emerald-600">Active ✓</span>
                   </div>
                 </div>
               </div>
@@ -302,9 +302,9 @@ export default function DashboardPreview() {
                   className={`p-3.5 rounded-2xl ${card.bg} space-y-1 transition-all duration-300`}
                   {...(i === 0 ? { style: { backgroundColor: currentCourse.primary, color: '#fff' } } : {})}
                 >
-                  <span className="text-[10px] font-mono opacity-80 uppercase block font-bold">CAREERCORE</span>
+                  <span className="text-[11px] font-mono opacity-80 uppercase block font-bold">CAREERCORE</span>
                   <h6 className="text-xs font-extrabold leading-snug">{card.title}</h6>
-                  <p className="text-[10px] opacity-80 leading-tight">
+                  <p className="text-[11px] opacity-80 leading-tight">
                     {card.desc}
                   </p>
                 </motion.div>

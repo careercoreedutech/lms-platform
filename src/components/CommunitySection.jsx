@@ -132,13 +132,13 @@ export default function CommunitySection() {
                     <span className="text-xs font-bold text-[#0A317B] block">
                       {post.author}
                     </span>
-                    <span className="text-[10px] text-gray-500 font-medium block">
+                    <span className="text-[11px] text-gray-500 font-medium block">
                       {post.role}
                     </span>
                   </div>
                 </div>
 
-                <span className="px-2 py-1 rounded bg-amber-50 text-[#FA9C16] text-[10px] font-extrabold border border-[#FA9C16]/30">
+                <span className="px-2 py-1 rounded bg-amber-50 text-[#FA9C16] text-[11px] font-extrabold border border-[#FA9C16]/30">
                   {post.salary}
                 </span>
               </div>

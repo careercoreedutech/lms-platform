@@ -147,7 +147,7 @@ export default function StudentFeedbackSection() {
                     ))}
                   </div>
                   {fb.isNew && (
-                    <span className="px-2 py-0.5 rounded-full bg-brand-orange text-white font-black text-[9px] uppercase tracking-wider">New</span>
+                    <span className="px-2 py-0.5 rounded-full bg-brand-orange text-white font-black text-[11px] uppercase tracking-wider">New</span>
                   )}
                 </div>
                 <blockquote>

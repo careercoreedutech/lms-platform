@@ -130,10 +130,10 @@ export default function Footer() {
               CareerCore Edutech empowers students and working professionals to master industry-ready tech skills, build production projects, and achieve career breakthroughs.
             </p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] font-bold text-white">
-              <a href={SITE.phoneHref} className="flex items-center gap-2 hover:text-brand-teal">
+              <a href={SITE.phoneHref} className="flex items-center gap-2 hover:text-brand-teal py-2 -my-2">
                 <Phone className="w-3.5 h-3.5 text-brand-orange" /> {SITE.phoneDisplay}
               </a>
-              <button onClick={() => openCounseling()} className="flex items-center gap-2 hover:text-brand-teal cursor-pointer">
+              <button onClick={() => openCounseling()} className="flex items-center gap-2 hover:text-brand-teal cursor-pointer py-2 -my-2">
                 <MessageCircle className="w-3.5 h-3.5 text-brand-orange" /> Book free counseling
               </button>
             </div>
@@ -160,7 +160,7 @@ export default function Footer() {
               <ul className="space-y-2.5">
                 {sec.links.map((link) => (
                   <li key={link.label}>
-                    <a {...linkProps(link.to)} className="text-[13px] font-medium text-slate-400 hover:text-white transition-colors">
+                    <a {...linkProps(link.to)} className="inline-block py-1.5 -my-1.5 text-[13px] font-medium text-slate-400 hover:text-white transition-colors">
                       {link.label}
                     </a>
                   </li>
@@ -173,8 +173,8 @@ export default function Footer() {
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs">
           <p>© {new Date().getFullYear()} {SITE.legalName}. All rights reserved.</p>
           <div className="flex items-center gap-5">
-            <a {...linkProps('/privacy-policy')} className="hover:text-white">Privacy</a>
-            <a {...linkProps('/terms')} className="hover:text-white">Terms</a>
+            <a {...linkProps('/privacy-policy')} className="inline-block py-2 -my-2 px-1 -mx-1 hover:text-white">Privacy</a>
+            <a {...linkProps('/terms')} className="inline-block py-2 -my-2 px-1 -mx-1 hover:text-white">Terms</a>
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="p-2 rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/15 hover:text-white transition-all text-slate-300 cursor-pointer"

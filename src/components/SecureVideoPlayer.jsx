@@ -398,7 +398,7 @@ export default function SecureVideoPlayer({
 
       {/* 3. Anti-Piracy Dynamic Moving Watermark */}
       <div 
-        className={`absolute ${watermarkClasses} pointer-events-none select-none z-30 transition-all duration-1000 flex items-center gap-1.5 bg-black/50 backdrop-blur-xs border border-white/10 px-2.5 py-1 rounded-lg text-[10px] font-mono text-white/80 shadow-lg`}
+        className={`absolute ${watermarkClasses} pointer-events-none select-none z-30 transition-all duration-1000 flex items-center gap-1.5 bg-black/50 backdrop-blur-xs border border-white/10 px-2.5 py-1 rounded-lg text-[11px] font-mono text-white/80 shadow-lg`}
       >
         <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
         <span>{currentUser?.email || currentUser?.username || 'CareerCore Student'}</span>
@@ -412,7 +412,7 @@ export default function SecureVideoPlayer({
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
           <div className="text-xs">
             <p className="font-extrabold text-white">Direct Download Disabled</p>
-            <p className="text-[10px] text-slate-300">Protected stream · Copyright © CareerCore Edutech</p>
+            <p className="text-[11px] text-slate-300">Protected stream · Copyright © CareerCore Edutech</p>
           </div>
         </div>
       )}
@@ -500,7 +500,7 @@ export default function SecureVideoPlayer({
 
           {/* Right: Protected Badge, Speed Selector, Fullscreen */}
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono">
+            <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono">
               <ShieldCheck className="w-3 h-3 text-emerald-400" />
               <span>Encrypted Stream</span>
             </div>

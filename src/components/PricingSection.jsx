@@ -109,7 +109,7 @@ export default function PricingSection() {
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-extrabold text-[#0A317B]">{plan.name}</h3>
                   {!plan.popular && (
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                    <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
                       {plan.badge}
                     </span>
                   )}

@@ -34,7 +34,7 @@ const Card = ({ className = '', children }) => (
 const CardHead = ({ icon: Icon, tone, label, title, desc, action }) => (
   <div>
     <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
-      <span className={`inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full text-[10px] sm:text-[11px] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap ${tone}`}>
+      <span className={`inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full text-[11px] sm:text-[11px] font-extrabold uppercase tracking-[0.12em] whitespace-nowrap ${tone}`}>
         <span className="w-6 h-6 rounded-full bg-white/80 flex items-center justify-center"><Icon className="w-3.5 h-3.5" /></span>
         {label}
       </span>
@@ -270,7 +270,7 @@ export default function BentoFeatures() {
                       <p className="text-xs text-slate-500 mt-0.5">{tracks[selectedTrack].tagline}</p>
                     </div>
                     <span className="text-right shrink-0">
-                      <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">Salary range</span>
+                      <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">Salary range</span>
                       <span className="block text-sm font-black text-emerald-600">{tracks[selectedTrack].salary}</span>
                     </span>
                   </div>
@@ -316,7 +316,7 @@ export default function BentoFeatures() {
                   <div aria-hidden className="absolute inset-2 rounded-xl border border-dashed border-amber-300/60 pointer-events-none" />
                   <div className="relative flex items-start justify-between gap-4">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Certificate of completion</p>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-amber-700">Certificate of completion</p>
                       <p className="text-lg font-black text-brand-navy mt-1 leading-tight">{cert.title}</p>
                       <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{cert.desc}</p>
                     </div>
@@ -371,7 +371,7 @@ export default function BentoFeatures() {
                         onClick={() => setPipelineStep(idx)}
                         className={`w-full h-full p-3 rounded-xl text-left transition-all cursor-pointer ring-1 ${on ? 'bg-brand-navy text-white ring-brand-navy' : 'bg-white text-slate-700 ring-slate-200 hover:ring-slate-300'}`}
                       >
-                        <span className={`flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider ${on ? 'text-brand-orange' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        <span className={`flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider ${on ? 'text-brand-orange' : done ? 'text-emerald-600' : 'text-slate-400'}`}>
                           {done ? <CheckCircle2 className="w-3 h-3" /> : null} Step {idx + 1}
                         </span>
                         <span className="block text-xs font-bold mt-0.5">{step.label}</span>
@@ -406,7 +406,7 @@ export default function BentoFeatures() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-[13px] font-black text-brand-orange">{item.package}</p>
-                        <p className={`text-[10px] font-bold uppercase tracking-wider ${item.status === 'Confirmed' ? 'text-emerald-400' : 'text-sky-300'}`}>{item.status}</p>
+                        <p className={`text-[11px] font-bold uppercase tracking-wider ${item.status === 'Confirmed' ? 'text-emerald-400' : 'text-sky-300'}`}>{item.status}</p>
                       </div>
                     </motion.div>
                   ))}

@@ -42,7 +42,7 @@ export default class ErrorBoundary extends React.Component {
                 <div className="text-left text-[11px] p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg overflow-x-auto max-h-40">
                   <div className="font-bold">{this.state.error?.message || String(this.state.error)}</div>
                   {this.state.error?.stack && (
-                    <pre className="text-[10px] text-red-600/80 mt-1 whitespace-pre-wrap">{this.state.error.stack.split('\n').slice(0, 4).join('\n')}</pre>
+                    <pre className="text-[11px] text-red-600/80 mt-1 whitespace-pre-wrap">{this.state.error.stack.split('\n').slice(0, 4).join('\n')}</pre>
                   )}
                 </div>
               )}

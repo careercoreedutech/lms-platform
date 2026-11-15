@@ -44,7 +44,7 @@ export default function LogoCloud() {
                 <span className="text-sm font-bold text-[#0A317B] block group-hover:text-[#1A9C9B] transition-colors">
                   {p.name}
                 </span>
-                <span className="text-[10px] text-gray-500 font-mono block">
+                <span className="text-[11px] text-gray-500 font-mono block">
                   {p.label}
                 </span>
               </div>

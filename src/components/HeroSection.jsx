@@ -158,7 +158,7 @@ export default function HeroSection() {
                     key={c.id}
                     href={`/courses/${slugify(c.title)}`}
                     onClick={(e) => { e.preventDefault(); navigate(`/courses/${slugify(c.title)}`); }}
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold text-white/80 ring-1 ring-white/15 hover:ring-brand-teal hover:text-white hover:bg-white/5 transition-colors"
+                    className="px-3 py-2 rounded-full text-xs font-semibold text-white/80 ring-1 ring-white/15 hover:ring-brand-teal hover:text-white hover:bg-white/5 transition-colors"
                   >
                     {c.title}
                   </a>
@@ -175,7 +175,7 @@ export default function HeroSection() {
               <span className="flex items-center gap-2.5">
                 <span className="flex -space-x-2">
                   {['A', 'P', 'K', 'S'].map((l, i) => (
-                    <span key={l} className={`w-7 h-7 rounded-full ring-2 ring-[#050B1F] bg-gradient-to-br ${AVATAR_COLORS[i]} text-white text-[10px] font-black flex items-center justify-center`}>{l}</span>
+                    <span key={l} className={`w-7 h-7 rounded-full ring-2 ring-[#050B1F] bg-gradient-to-br ${AVATAR_COLORS[i]} text-white text-[11px] font-black flex items-center justify-center`}>{l}</span>
                   ))}
                 </span>
                 <span><b className="text-white">50,000+</b> learners</span>

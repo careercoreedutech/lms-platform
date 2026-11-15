@@ -73,7 +73,7 @@ function Panel({ step }) {
             <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> 38 attending</span>
             <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> 90 min</span>
           </div>
-          <span className="absolute top-4 right-4 px-2 py-0.5 rounded-md bg-red-500 text-[10px] font-black">LIVE</span>
+          <span className="absolute top-4 right-4 px-2 py-0.5 rounded-md bg-red-500 text-[11px] font-black">LIVE</span>
         </div>
         {[['Mon', 'Vector embeddings — quiz', true], ['Wed', 'Mentor office hours', true], ['Fri', 'Build: chat with your PDFs', false]].map(([d, t, done]) => (
           <div key={t} className="flex items-center gap-3 p-3 rounded-xl ring-1 ring-slate-200">
@@ -222,7 +222,7 @@ export default function InteractiveShowcase() {
               })}
             </ol>
 
-            <button onClick={() => openCounseling()} className="mt-8 inline-flex items-center gap-2 text-sm font-extrabold text-brand-navy hover:text-brand-teal cursor-pointer group">
+            <button onClick={() => openCounseling()} className="mt-8 inline-flex items-center gap-2 text-sm font-extrabold text-brand-navy hover:text-brand-teal cursor-pointer group py-3 -my-3">
               <PhoneCall className="w-4 h-4 text-brand-orange" /> Start with a free counseling call
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
