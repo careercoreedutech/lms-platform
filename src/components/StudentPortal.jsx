@@ -201,14 +201,15 @@ export default function StudentPortal() {
       }
     }
     const type = item.contentType || 'video';
-    const fallbackPath = item.videoStoragePath || 
-      (item.videoUrl && !item.videoUrl.startsWith('http') && !item.videoUrl.startsWith('blob:') ? item.videoUrl : '') ||
-      (type === 'video' && (item.title?.includes('Day 1') || !item.videoUrl) ? 'courses/1789887976311_AirBnB_Concept_Ad.mp4' : '');
+    // Only the lesson's own video. (A demo clip used to be injected into any video lesson
+    // without one, which made empty lessons look complete-able — QA CC-012.)
+    const fallbackPath = item.videoStoragePath ||
+      (item.videoUrl && !item.videoUrl.startsWith('http') && !item.videoUrl.startsWith('blob:') ? item.videoUrl : '');
 
     return [{
       id: item.id ? `block_${item.id}` : 'block_init',
       type: type,
-      videoFileName: item.videoFileName || (fallbackPath ? 'AirBnB_Concept_Ad.mp4' : ''),
+      videoFileName: item.videoFileName || '',
       videoBlobUrl: item.videoBlobUrl || '',
       videoUrl: item.videoUrl || fallbackPath,
       videoStoragePath: fallbackPath,
@@ -462,10 +463,16 @@ export default function StudentPortal() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(null);
 
+  // Lessons whose own title/description match are shown on their own. Only when no lesson
+  // matches does a matching week title bring in that whole week.
+  const searchLower = searchQuery.trim().toLowerCase();
+  const lessonTextMatches = (item) =>
+    [item?.title, item?.description].some(t => String(t || '').toLowerCase().includes(searchLower));
+  const anyLessonMatches = Boolean(searchLower) && sections.some(sec => (sec.items || []).some(lessonTextMatches));
   const matchesSearch = (sec, item) => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return true;
-    return [item?.title, item?.description, sec?.title].some(t => String(t || '').toLowerCase().includes(q));
+    if (!searchLower) return true;
+    if (anyLessonMatches) return lessonTextMatches(item);
+    return String(sec?.title || '').toLowerCase().includes(searchLower);
   };
 
   const toggleWeek = (index) => {
