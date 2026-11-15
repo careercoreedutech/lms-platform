@@ -107,7 +107,7 @@ export function CounselingForm({ topic, defaultTrack, source = 'website', onDone
       )}
 
       <Field label="Full name" required htmlFor="counsel-name" error={errors.name}>
-        <input id="counsel-name" className={`${inputClass(errors.name)} px-3.5`} value={form.name} onChange={set('name')}
+        <input id="counsel-name" required aria-required="true" className={`${inputClass(errors.name)} px-3.5`} value={form.name} onChange={set('name')}
           placeholder="Your full name" autoComplete="name" aria-invalid={!!errors.name} />
       </Field>
 
@@ -115,7 +115,7 @@ export function CounselingForm({ topic, defaultTrack, source = 'website', onDone
         <Field label="Mobile number" required htmlFor="counsel-phone" error={errors.phone}>
           <div className="relative">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-slate-400 pointer-events-none">+91</span>
-            <input id="counsel-phone" type="tel" inputMode="numeric" className={`${inputClass(errors.phone)} pl-12 pr-3.5`}
+            <input id="counsel-phone" type="tel" inputMode="numeric" maxLength={10} pattern="[6-9][0-9]{9}" required aria-required="true" className={`${inputClass(errors.phone)} pl-12 pr-3.5`}
               value={form.phone} onChange={set('phone')} placeholder="10-digit mobile number" autoComplete="tel-national" aria-invalid={!!errors.phone} />
           </div>
         </Field>

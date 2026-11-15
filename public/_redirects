@@ -10,7 +10,6 @@
 /portal/*  /index.html  200
 /student  /index.html  200
 /student/*  /index.html  200
-/courses/*  /index.html  200
 /career-reports  /index.html  200
 /projects-hub  /index.html  200
 /workshops  /index.html  200

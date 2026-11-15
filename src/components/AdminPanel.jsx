@@ -197,7 +197,7 @@ export default function AdminPanel() {
 
   const currentYearMentor = new Date().getFullYear();
   const maxYearMentor = currentYearMentor - 18;
-  const minYearMentor = 1950;
+  const minYearMentor = currentYearMentor - 100;
   const MENTOR_YEARS = Array.from({ length: maxYearMentor - minYearMentor + 1 }, (_, i) => maxYearMentor - i);
 
   const getMentorDaysInMonth = (monthVal, yearVal) => {

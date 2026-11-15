@@ -5,10 +5,12 @@ import http from 'http';
 import { URL } from 'url';
 import fs from 'fs';
 import path from 'path';
+import staticRoutes from './scripts/vite-static-routes.js';
 
 export default defineConfig({
   plugins: [
     react(),
+    staticRoutes(),
     {
       // Vercel serves dist/404.html (with a 404 status) for unknown URLs.
       // Making it a copy of index.html lets the app boot and show its own "Page not found" screen.
@@ -147,7 +149,7 @@ export default defineConfig({
           'vendor-motion': ['framer-motion'],
           'vendor-icons': ['lucide-react'],
           'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-lottie': ['lottie-react']
+          'vendor-lottie': ['lottie-web/build/player/lottie_light', 'lottie-web/build/player/lottie_light_canvas']
         }
       }
     },

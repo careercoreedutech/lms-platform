@@ -49,7 +49,7 @@ const MONTHS = [
 
 const currentYear = new Date().getFullYear();
 const maxYear = currentYear - MIN_STUDENT_AGE; // youngest allowed birth year
-const minYear = 1950;
+const minYear = currentYear - 100; // covers every realistic adult learner
 const YEARS = Array.from({ length: maxYear - minYear + 1 }, (_, i) => maxYear - i);
 
 const isLeapYear = (y) => {
@@ -260,7 +260,7 @@ export default function EnrollmentModal() {
               <div className="relative">
                 <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  id="enroll-name" type="text" name="student_fullname" autoComplete="name"
+                  id="enroll-name" required aria-required="true" type="text" name="student_fullname" autoComplete="name"
                   value={formData.name}
                   onChange={(e) => update({ name: e.target.value }, 'name')}
                   onBlur={blur('name')}
@@ -275,7 +275,7 @@ export default function EnrollmentModal() {
               <div className="relative">
                 <AtSign className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
-                  id="enroll-username" type="text" name="new_student_username" autoComplete="off"
+                  id="enroll-username" required aria-required="true" type="text" name="new_student_username" autoComplete="off"
                   value={formData.username}
                   onChange={(e) => update({ username: e.target.value.replace(/\s/g, '') }, 'username')}
                   onBlur={blur('username')}
@@ -291,7 +291,7 @@ export default function EnrollmentModal() {
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
-                id="enroll-email" type="email" name="student_email" autoComplete="email"
+                id="enroll-email" required aria-required="true" type="email" name="student_email" autoComplete="email"
                 value={formData.email}
                 onChange={(e) => update({ email: e.target.value }, 'email')}
                 onBlur={blur('email')}
@@ -316,7 +316,7 @@ export default function EnrollmentModal() {
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-bold text-slate-400 pointer-events-none">+91</span>
               <input
-                id="enroll-phone" type="tel" inputMode="numeric" name="student_phone" autoComplete="tel-national"
+                id="enroll-phone" required aria-required="true" type="tel" inputMode="numeric" name="student_phone" autoComplete="tel-national"
                 value={formData.phone}
                 onChange={(e) => update({ phone: sanitizePhoneNumber(e.target.value) }, 'phone')}
                 onKeyDown={(e) => { if (['+', '-', '.', 'e', 'E'].includes(e.key)) e.preventDefault(); }}
@@ -347,7 +347,7 @@ export default function EnrollmentModal() {
           >
             <div className="grid grid-cols-3 gap-2" role="group" aria-label="Date of birth">
               <select
-                id="enroll-dob-month" aria-label="Month" value={formData.dobMonth}
+                id="enroll-dob-month" required aria-required="true" aria-label="Month" value={formData.dobMonth}
                 aria-invalid={!!errors.dob}
                 onChange={(e) => {
                   const newMonth = e.target.value;
@@ -360,7 +360,7 @@ export default function EnrollmentModal() {
                 {MONTHS.map((m) => <option key={m.value} value={m.value}>{m.name}</option>)}
               </select>
               <select
-                aria-label="Day" value={formData.dobDate} aria-invalid={!!errors.dob}
+                required aria-required="true" aria-label="Day" value={formData.dobDate} aria-invalid={!!errors.dob}
                 onChange={(e) => update({ dobDate: e.target.value }, 'dob')}
                 className={selectClass(errors.dob)}
               >
@@ -370,7 +370,7 @@ export default function EnrollmentModal() {
                 ))}
               </select>
               <select
-                aria-label="Year" value={formData.dobYear} aria-invalid={!!errors.dob}
+                required aria-required="true" aria-label="Year" value={formData.dobYear} aria-invalid={!!errors.dob}
                 onChange={(e) => {
                   const newYear = e.target.value;
                   const maxDays = getDaysInMonth(formData.dobMonth, newYear);
@@ -388,7 +388,7 @@ export default function EnrollmentModal() {
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
-                id="enroll-password" type={showPassword ? 'text' : 'password'} name="new_student_password" autoComplete="new-password"
+                id="enroll-password" required aria-required="true" type={showPassword ? 'text' : 'password'} name="new_student_password" autoComplete="new-password"
                 value={formData.password}
                 onChange={(e) => update({ password: e.target.value }, 'password')}
                 onBlur={blur('password')}

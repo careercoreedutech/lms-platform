@@ -30,13 +30,15 @@ export function downloadSyllabus(course) {
 ${course.description ? `<p class="desc">${esc(course.description)}</p>` : ''}
 ${rows || '<p>The detailed week-by-week plan is shared by your counselor on request.</p>'}
 <footer>Every program includes 1-on-1 mentorship, a production-style capstone and career support. Curriculum is updated regularly with industry input.</footer>
-<script>window.onload=function(){setTimeout(function(){window.print()},300)}</script>
 </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const win = window.open(url, '_blank');
-  if (!win) {
+  if (win) {
+    // Print from here: the site's Content-Security-Policy blocks inline scripts in the new tab.
+    win.addEventListener('load', () => setTimeout(() => { try { win.print(); } catch (e) {} }, 300));
+  } else {
     // Popup blocked → fall back to downloading the file
     const a = document.createElement('a');
     a.href = url;

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import lottie from 'lottie-web';
+// Light build: no expression engine, so no eval() under the site's Content-Security-Policy.
+import lottie from 'lottie-web/build/player/lottie_light';
 
 // Import Lottie JSON files from icons directory
 import buildingBlocksJson from '../../icons/building-blocks.json';

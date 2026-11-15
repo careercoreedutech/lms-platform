@@ -36,6 +36,25 @@ import { useLms } from '../context/LmsContext';
 import { supabase, getProtectedVideoUrl } from '../lib/supabase';
 import SecureVideoPlayer from './SecureVideoPlayer';
 import FeedbackModal from './FeedbackModal';
+import PortalTabPanel from './PortalTabPanels';
+import { openCertificate } from '../lib/certificate';
+
+const plural = (n, word, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
+const PLACEHOLDER_ARTICLE = '# Study Article\n\nWrite lesson notes here...';
+
+// A block counts as real learning content only if the admin actually filled it in.
+function blockHasContent(b) {
+  if (!b) return false;
+  if (b.type === 'video') return Boolean(b.videoUrl || b.videoStoragePath || b.videoBlobUrl);
+  if (b.type === 'notion') {
+    const doc = String(b.notionDoc || '').trim();
+    return doc.length > 0 && doc !== PLACEHOLDER_ARTICLE;
+  }
+  if (b.type === 'quiz') {
+    return Array.isArray(b.quizQuestions) && b.quizQuestions.some((q) => q?.question && q.question !== 'Sample Question');
+  }
+  return Boolean(b.resourceFileName || b.resourceUrl);
+}
 
 export default function StudentPortal() {
   const { currentUser, courses, logout, setActiveView, syncUsersFromSupabase, loginStudent } = useLms();
@@ -45,6 +64,8 @@ export default function StudentPortal() {
   const [studentAuthenticating, setStudentAuthenticating] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('RESOURCES');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [certNotice, setCertNotice] = useState(null);
   const [expandedWeeks, setExpandedWeeks] = useState({ 0: true, 1: false, 2: false });
   const [sidebarRailTab, setSidebarRailTab] = useState('articles'); // 'all' | 'articles' | 'quiz'
   const [activeModalItem, setActiveModalItem] = useState(null); // Item currently open in reader modal
@@ -232,10 +253,11 @@ export default function StudentPortal() {
     return blocks.map((b, idx) => ({ item, block: b, idx }));
   });
 
-  const totalLessons = allBlocksList.length > 0 ? allBlocksList.length : allCourseItems.length;
-  const completedLessonsCount = allBlocksList.length > 0
-    ? allBlocksList.filter(({ item, block, idx }) => isBlockCompleted(item, block, idx)).length
-    : allCourseItems.filter(item => isItemCompleted(item)).length;
+  // Progress is counted per lesson: finishing one lesson moves the counter by exactly one,
+  // however many videos/articles/quizzes that lesson contains.
+  const totalLessons = allCourseItems.length;
+  const completedLessonsCount = allCourseItems.filter(item => isItemCompleted(item)).length;
+  const itemHasContent = useCallback((item) => getBlocksForItem(item).some(blockHasContent), [getBlocksForItem]);
 
   const progressPercent = totalLessons > 0 ? Math.min(100, Math.round((completedLessonsCount / totalLessons) * 100)) : 0;
   const isCourseFullyCompleted = totalLessons > 0 && completedLessonsCount >= totalLessons;
@@ -251,6 +273,7 @@ export default function StudentPortal() {
 
     const targetItem = allCourseItems.find(it => it.id === itemId) || (activeModalItem?.id === itemId ? activeModalItem : null);
     const blocks = targetItem ? getBlocksForItem(targetItem) : [];
+    if (!blocks.some(blockHasContent)) return; // nothing to learn yet, so nothing to complete
 
     // Mark item AND all its constituent blocks as completed
     const updatedIds = { ...completedItemIds, [itemId]: true };
@@ -308,16 +331,9 @@ export default function StudentPortal() {
         // Update enrollments & profiles progress_percent in Supabase
         const targetCourseId = courseData?.id;
         if (targetCourseId && currentUser?.id) {
-          const updatedBlocksList = (courseData?.sections || []).flatMap(s => s.items || []).flatMap(it => {
-            const blks = getBlocksForItem(it);
-            return blks.map((b, i) => ({ it, b, i }));
-          });
-          const currentTotal = updatedBlocksList.length > 0 ? updatedBlocksList.length : 1;
-          const updatedLessonsCount = updatedBlocksList.filter(({ it, b, i }) => {
-            const bId = b.id || `b_${it.id}_${i}`;
-            if (it.id === itemId) return true;
-            return updatedIds[bId] || (i === 0 && updatedIds[it.id]);
-          }).length;
+          const courseItems = (courseData?.sections || []).flatMap(s => s.items || []);
+          const currentTotal = courseItems.length || 1;
+          const updatedLessonsCount = courseItems.filter(it => it.id === itemId || updatedIds[it.id] === true).length;
 
           const pct = Math.min(100, Math.round((updatedLessonsCount / currentTotal) * 100));
 
@@ -405,16 +421,11 @@ export default function StudentPortal() {
 
         const targetCourseId = courseData?.id;
         if (targetCourseId && currentUser?.id) {
-          const updatedBlocksList = (courseData?.sections || []).flatMap(s => s.items || []).flatMap(it => {
-            const blks = getBlocksForItem(it);
-            return blks.map((b, i) => ({ it, b, i }));
-          });
-          const currentTotal = updatedBlocksList.length > 0 ? updatedBlocksList.length : 1;
-          const updatedLessonsCount = updatedBlocksList.filter(({ it, b, i }) => {
-            const bId = b.id || `b_${it.id}_${i}`;
-            if (it.id === item.id && i === blockIdx) return newStatus;
-            return updatedIds[bId] !== undefined ? updatedIds[bId] : isBlockCompleted(it, b, i);
-          }).length;
+          const courseItems = (courseData?.sections || []).flatMap(s => s.items || []);
+          const currentTotal = courseItems.length || 1;
+          const updatedLessonsCount = courseItems.filter(it =>
+            it.id === item.id ? allComplete : (updatedIds[it.id] === true || isItemCompleted(it))
+          ).length;
 
           const pct = Math.min(100, Math.round((updatedLessonsCount / currentTotal) * 100));
 
@@ -444,12 +455,18 @@ export default function StudentPortal() {
         console.warn('Block sync notice:', err);
       }
     }
-  }, [completedItemIds, isBlockCompleted, getBlocksForItem, studentIdentifier, progressKey, currentUser, courseData, syncUsersFromSupabase]);
+  }, [completedItemIds, isBlockCompleted, isItemCompleted, getBlocksForItem, studentIdentifier, progressKey, currentUser, courseData, syncUsersFromSupabase]);
 
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(null);
+
+  const matchesSearch = (sec, item) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [item?.title, item?.description, sec?.title].some(t => String(t || '').toLowerCase().includes(q));
+  };
 
   const toggleWeek = (index) => {
     setExpandedWeeks(prev => ({ ...prev, [index]: !prev[index] }));
@@ -457,6 +474,7 @@ export default function StudentPortal() {
 
   const openItemModal = (item) => {
     setActiveModalItem(item);
+    setSidebarRailTab('all');
     setQuizAnswers({});
     setQuizSubmitted(false);
     setQuizScore(null);
@@ -693,8 +711,12 @@ export default function StudentPortal() {
             <div className="relative hidden md:block w-60 lg:w-72 ml-2">
               <Search className="w-4 h-4 text-emerald-600 absolute left-3 top-2.5" />
               <input
-                type="text"
-                placeholder="Search..."
+                type="search"
+                aria-label="Search lessons"
+                placeholder="Search lessons..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); if (e.target.value) setActiveSubTab('RESOURCES'); }}
+                onKeyDown={(e) => { if (e.key === 'Escape') setSearchQuery(''); }}
                 className="w-full pl-9 pr-4 py-1.5 rounded-full border border-emerald-500/50 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs bg-white"
               />
             </div>
@@ -760,7 +782,7 @@ export default function StudentPortal() {
 
             <div className="space-y-1">
               <div className="flex items-center justify-between text-xs text-slate-600 font-bold max-w-md">
-                <span>{completedLessonsCount} of {totalLessons} Complete. ({progressPercent}%)</span>
+                <span>{completedLessonsCount} of {plural(totalLessons, 'lesson')} complete ({progressPercent}%)</span>
                 {isCourseFullyCompleted && (
                   <span className="text-emerald-600 flex items-center gap-1 font-extrabold text-[11px]">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -783,9 +805,22 @@ export default function StudentPortal() {
           </div>
 
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 shrink-0">
-            <button className="px-5 py-2.5 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer">
+            <button
+              onClick={() => {
+                if (isCourseFullyCompleted) {
+                  const opened = openCertificate({ studentName: currentUser?.name || 'Student', courseTitle: courseData?.title || '' });
+                  setCertNotice(opened
+                    ? { tone: 'ok', text: 'Your certificate opened in a new tab. Use "Save as PDF" in the print dialog to download it.' }
+                    : { tone: 'warn', text: 'Your browser blocked the certificate tab. Please allow pop-ups for this site and try again.' });
+                } else {
+                  const left = totalLessons - completedLessonsCount;
+                  setCertNotice({ tone: 'warn', text: `Complete all ${plural(totalLessons, 'lesson')} to unlock your certificate. ${plural(left, 'lesson')} to go.` });
+                }
+              }}
+              className="px-5 py-2.5 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-bold text-xs shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            >
               <Award className="w-4 h-4" />
-              <span>Get Certificates</span>
+              <span>Get Certificate</span>
             </button>
 
             <button 
@@ -797,6 +832,16 @@ export default function StudentPortal() {
             </button>
           </div>
         </div>
+
+        {certNotice && (
+          <div
+            role="status"
+            className={`flex items-start justify-between gap-3 p-3 rounded-xl text-xs font-semibold border ${certNotice.tone === 'ok' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-900 border-amber-200'}`}
+          >
+            <span>{certNotice.text}</span>
+            <button onClick={() => setCertNotice(null)} className="text-[11px] font-bold underline cursor-pointer shrink-0">Dismiss</button>
+          </div>
+        )}
 
         {/* Navigation Tabs Bar */}
         <div className="flex items-center gap-6 sm:gap-8 border-b border-gray-200 text-xs font-bold text-gray-500 overflow-x-auto whitespace-nowrap scrollbar-none pb-0.5">
@@ -819,11 +864,20 @@ export default function StudentPortal() {
           ))}
         </div>
 
-        {/* Main Course Structure Section */}
+        {activeSubTab !== 'RESOURCES' ? (
+          <PortalTabPanel
+            tab={activeSubTab}
+            currentUser={currentUser}
+            courseTitle={courseData?.title}
+            completed={completedLessonsCount}
+            total={totalLessons}
+          />
+        ) : (
+        /* Main Course Structure Section */
         <div className="max-w-5xl space-y-4">
             
             {/* Top Featured Item Card */}
-            {featuredItem && (
+            {featuredItem && !searchQuery.trim() && (
               <div className={`p-4 rounded-2xl border shadow-xs flex items-center justify-between gap-4 transition-all ${
                 isCourseFullyCompleted ? 'bg-emerald-50/40 border-emerald-200' : 'bg-white border-gray-200'
               }`}>
@@ -884,8 +938,17 @@ export default function StudentPortal() {
 
             {/* Hierarchical Sections Accordion Tree */}
             <div className="space-y-3">
+              {searchQuery.trim() && !sections.some(sec => (sec.items || []).some(it => matchesSearch(sec, it))) && (
+                <div className="p-6 rounded-2xl bg-white border border-gray-200 text-center text-xs text-gray-500">
+                  No lessons match "<b className="text-slate-700">{searchQuery.trim()}</b>".{' '}
+                  <button onClick={() => setSearchQuery('')} className="text-[#1A9C9B] font-bold underline cursor-pointer">Clear search</button>
+                </div>
+              )}
               {sections.map((sec, secIdx) => {
-                const isExpanded = expandedWeeks[secIdx];
+                const searching = Boolean(searchQuery.trim());
+                const secItems = (sec.items || []).filter(it => matchesSearch(sec, it));
+                if (searching && secItems.length === 0) return null;
+                const isExpanded = searching || expandedWeeks[secIdx];
 
                 return (
                   <div 
@@ -925,7 +988,7 @@ export default function StudentPortal() {
                           exit={{ opacity: 0, height: 0 }}
                           className="border-t border-gray-100 bg-slate-50/50 p-3 sm:p-4 space-y-2.5"
                         >
-                          {sec.items?.map((item, itemIdx) => {
+                          {secItems.map((item, itemIdx) => {
                             const isVideo = item.contentType === 'video';
                             const isQuiz = item.contentType === 'quiz';
                             const itemBlocks = getBlocksForItem(item);
@@ -974,11 +1037,11 @@ export default function StudentPortal() {
 
                                     <div className="flex items-center gap-3 text-[11px] text-gray-500 font-medium">
                                       <span className="flex items-center gap-1">
-                                        <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" /> {itemBlocks.filter(b => b.type === 'notion').length || item.articles || 1} Articles
+                                        <FileText className="w-3.5 h-3.5 text-[#1A9C9B]" /> {plural(itemBlocks.filter(b => b.type === 'notion' && blockHasContent(b)).length, 'Article')}
                                       </span>
                                       {(item.mcqs !== undefined || itemBlocks.some(b => b.type === 'quiz')) && (
                                         <span className="flex items-center gap-1">
-                                          <HelpCircle className="w-3.5 h-3.5 text-[#FA9C16]" /> {item.mcqs || itemBlocks.filter(b => b.type === 'quiz').length} MCQ's
+                                          <HelpCircle className="w-3.5 h-3.5 text-[#FA9C16]" /> {plural(Number(item.mcqs) || itemBlocks.filter(b => b.type === 'quiz').reduce((n, b) => n + (b.quizQuestions?.length || 0), 0), 'MCQ')}
                                         </span>
                                       )}
                                     </div>
@@ -1009,6 +1072,7 @@ export default function StudentPortal() {
               })}
             </div>
         </div>
+        )}
 
       </main>
 
@@ -1425,18 +1489,18 @@ export default function StudentPortal() {
                         <HelpCircle className="w-6 h-6" />
                       </div>
                       <h4 className="text-sm font-extrabold text-[#0A317B]">
-                        {sidebarRailTab === 'quiz' ? 'No MCQ Quizzes on this Topic Page' : 'No Articles on this Topic Page'}
+                        {sidebarRailTab === 'quiz' ? 'No quiz in this lesson yet' : 'No reading material in this lesson yet'}
                       </h4>
                       <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                        {sidebarRailTab === 'quiz' 
-                          ? 'The Admin has not added an MCQ Quiz block to this topic canvas yet. Select a Quiz topic from the middle column or click "All" to view this page.' 
-                          : 'The Admin has not added an Article block to this topic canvas yet. Select an Article topic from the middle column or click "All" to view this page.'}
+                        {sidebarRailTab === 'quiz'
+                          ? 'Your mentor hasn\'t added a quiz to this lesson. Check the other content in this lesson, or come back later.'
+                          : 'Your mentor hasn\'t added an article to this lesson. Check the other content in this lesson, or come back later.'}
                       </p>
                       <button 
                         onClick={() => setSidebarRailTab('all')}
                         className="px-4 py-2 rounded-xl bg-[#1A9C9B] text-white font-bold text-xs cursor-pointer"
                       >
-                        View All Page Content
+                        Show all lesson content
                       </button>
                     </div>
                   )}
@@ -1453,16 +1517,20 @@ export default function StudentPortal() {
                   Close Reader
                 </button>
 
-                <button
-                  onClick={() => {
-                    markComplete(activeModalItem.id);
-                    setActiveModalItem(null);
-                  }}
-                  className="px-6 py-2 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Mark as Completed</span>
-                </button>
+                {itemHasContent(activeModalItem) ? (
+                  <button
+                    onClick={() => {
+                      markComplete(activeModalItem.id);
+                      setActiveModalItem(null);
+                    }}
+                    className="px-6 py-2 rounded-xl bg-[#1A9C9B] hover:bg-[#147d7c] text-white font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Mark as Completed</span>
+                  </button>
+                ) : (
+                  <span className="text-[11px] font-semibold text-gray-500">This lesson has no content yet, so it can't be completed.</span>
+                )}
               </div>
 
             </motion.div>

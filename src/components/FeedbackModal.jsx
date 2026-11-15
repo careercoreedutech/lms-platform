@@ -44,15 +44,24 @@ export default function FeedbackModal({ isOpen, onClose }) {
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!comment.trim()) {
-      setErrorMsg('Please write a brief feedback comment.');
+    const errs = {};
+    if (!comment.trim()) errs.comment = 'Please write your review before publishing.';
+    else if (comment.trim().length < 10) errs.comment = 'Please add a little more detail (at least 10 characters).';
+    if (!name.trim()) errs.name = 'Please enter your name.';
+    if (!course.trim()) errs.course = 'Please enter your course track.';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) {
+      setErrorMsg('Please fix the highlighted fields.');
+      document.getElementById(`feedback-${Object.keys(errs)[0]}`)?.focus();
       return;
     }
+    setErrorMsg('');
 
     addFeedback({
       name: name.trim() || currentUser?.name || 'Student',
@@ -158,9 +167,9 @@ export default function FeedbackModal({ isOpen, onClose }) {
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
                 {errorMsg && (
-                  <div className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-bold border border-red-200">
+                  <div role="alert" className="p-3 rounded-xl bg-red-50 text-red-700 text-xs font-bold border border-red-200">
                     {errorMsg}
                   </div>
                 )}
@@ -232,7 +241,6 @@ export default function FeedbackModal({ isOpen, onClose }) {
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Practical projects and wonderful mentors!"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
-                    required
                   />
                 </div>
 
@@ -242,39 +250,58 @@ export default function FeedbackModal({ isOpen, onClose }) {
                     Your Detailed Review / Feedback <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                    id="feedback-comment"
+                    aria-required="true"
+                    aria-invalid={!!fieldErrors.comment}
+                    aria-describedby={fieldErrors.comment ? 'feedback-comment-error' : undefined}
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
+                    onChange={(e) => { setComment(e.target.value); setFieldErrors((p) => ({ ...p, comment: undefined })); }}
                     placeholder="Describe your learning experience, what you built, how mentors assisted you, or how it helped your career..."
                     rows={3}
-                    className="w-full p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium resize-none"
+                    className={`w-full p-3 rounded-xl border focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium resize-none ${fieldErrors.comment ? 'border-red-400' : 'border-slate-300'}`}
                     required
                   />
+                  {fieldErrors.comment && (
+                    <p id="feedback-comment-error" role="alert" className="text-[11px] text-red-600 mt-1 font-semibold">{fieldErrors.comment}</p>
+                  )}
                 </div>
 
                 {/* Student Info Row */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Your Name</label>
+                    <label htmlFor="feedback-name" className="text-xs font-bold text-slate-700 block mb-1">Your Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
+                      id="feedback-name"
+                      aria-required="true"
+                      aria-invalid={!!fieldErrors.name}
                       value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      onChange={(e) => { setName(e.target.value); setFieldErrors((p) => ({ ...p, name: undefined })); }}
                       placeholder="Your full name"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
+                      className={`w-full px-3 py-2 rounded-xl border focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium ${fieldErrors.name ? 'border-red-400' : 'border-slate-300'}`}
                       required
                     />
+                    {fieldErrors.name && (
+                      <p id="feedback-name-error" role="alert" className="text-[11px] text-red-600 mt-1 font-semibold">{fieldErrors.name}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Course Track</label>
+                    <label htmlFor="feedback-course" className="text-xs font-bold text-slate-700 block mb-1">Course Track <span className="text-red-500">*</span></label>
                     <input
                       type="text"
+                      id="feedback-course"
+                      aria-required="true"
+                      aria-invalid={!!fieldErrors.course}
                       value={course}
-                      onChange={(e) => setCourse(e.target.value)}
+                      onChange={(e) => { setCourse(e.target.value); setFieldErrors((p) => ({ ...p, course: undefined })); }}
                       placeholder="Course program"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium"
+                      className={`w-full px-3 py-2 rounded-xl border focus:ring-2 focus:ring-[#1A9C9B] focus:outline-none text-xs font-medium ${fieldErrors.course ? 'border-red-400' : 'border-slate-300'}`}
                       required
                     />
+                    {fieldErrors.course && (
+                      <p id="feedback-course-error" role="alert" className="text-[11px] text-red-600 mt-1 font-semibold">{fieldErrors.course}</p>
+                    )}
                   </div>
                 </div>
 

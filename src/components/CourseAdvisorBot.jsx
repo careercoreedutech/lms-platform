@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import lottie from 'lottie-web';
+// Light build: no expression engine, so no eval() under the site's Content-Security-Policy.
+import lottie from 'lottie-web/build/player/lottie_light_canvas';
 import { 
   MessageSquare, 
   X, 
@@ -91,47 +92,37 @@ const RECOMMENDED_COURSES = [
   }
 ];
 
-// Hide the launcher while the user scrolls down or while the footer is on screen,
-// so it never sits on top of content they are reading (BUG-016/018).
+// The launcher stays visible and clickable everywhere (QA CC-009: it used to fade out and
+// become click-through as soon as the page scrolled, so the chat looked broken).
+// Exceptions: while another popup/menu is open (the .hide-on-overlay CSS rule), and on
+// phones/tablets inside the home-page hero, where the hero text runs edge to edge.
 function useLauncherVisibility() {
-  const [visible, setVisible] = useState(() => typeof window === 'undefined' || window.innerWidth >= 1024);
+  const isHeroZone = () =>
+    window.innerWidth < 1024 &&
+    window.location.pathname === '/' &&
+    window.scrollY < window.innerHeight * 0.9;
+  const [visible, setVisible] = useState(() => typeof window === 'undefined' || !isHeroZone());
   const [atTop, setAtTop] = useState(true);
   useEffect(() => {
-    let lastY = window.scrollY;
-    let footerVisible = false;
     let ticking = false;
-    const footer = document.querySelector('[data-site-footer]');
-    let io;
-    if (footer && 'IntersectionObserver' in window) {
-      io = new IntersectionObserver(([entry]) => {
-        footerVisible = entry.isIntersecting;
-        if (footerVisible) setVisible(false);
-      }, { rootMargin: '0px 0px -40px 0px' });
-      io.observe(footer);
-    }
+    const update = () => {
+      setAtTop(window.scrollY < 120);
+      setVisible(!isHeroZone());
+      ticking = false;
+    };
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const delta = y - lastY;
-        setAtTop(y < 120);
-        // On phones/tablets the hero text runs edge to edge, so keep the launcher
-        // out of the hero and only bring it back when the user scrolls up.
-        const compact = window.innerWidth < 1024;
-        const heroZone = compact && y < window.innerHeight * 0.9;
-        if (heroZone) setVisible(false);
-        else if (y < 120) setVisible(!footerVisible);
-        else if (delta > 6) setVisible(false);
-        else if (delta < -6) setVisible(!footerVisible);
-        lastY = y;
-        ticking = false;
-      });
+      requestAnimationFrame(update);
     };
+    update();
     window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    window.addEventListener('popstate', onScroll);
     return () => {
       window.removeEventListener('scroll', onScroll);
-      io?.disconnect();
+      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('popstate', onScroll);
     };
   }, []);
   return { visible, atTop };
